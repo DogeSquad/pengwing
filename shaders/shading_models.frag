@@ -23,20 +23,21 @@ float cdot(vec3 a, vec3 b) {
 // D
 float beckmannDistribution(float dotNH) {
     float sigma2 = roughness * roughness;
-    // TASK: Compute d-term
-    return 1.0;
+    float alpha = acos(dotNH);
+
+    return exp(-pow(tan(alpha), 2) / sigma2) / (pi * sigma2 * pow(cos(alpha), 4));
 }
 
 // F
 float schlickApprox(float dotVH, float n1, float n2) {
-    // TASK: Compute f-term
-    return 1.0;
+    float R = pow((n1 - n2) / (n1 + n2), 2);
+
+    return R + (1- R) * pow((1 - dotVH), 5);
 }
 
 // G
 float geometricAttenuation(float dotNH, float dotVN, float dotVH, float dotNL) {
-    // TASK: Compute g-term
-    return 1.0;
+    return min(1.0f, min(2.0f * dotNH * dotVN / dotVH, 2.0f * dotNH * dotNL / dotVH));
 }
 
 float cooktorranceTerm(vec3 n, vec3 l) {
@@ -56,12 +57,40 @@ float cooktorranceTerm(vec3 n, vec3 l) {
     return max(D * F * G / (4.0 * dotVN * dotNL), 0.0);
 }
 
+float dot_clamp(vec3 a, vec3 b) {
+    return clamp(dot(a, b), 0.0f, 1.0f);
+}
+
 float orennayarTerm(float lambert, vec3 n, vec3 l) {
     vec3 v = vec3(0.0, 0.0, 1.0); // Im eye space ist die Richtung zum Betrachter schlicht die Z-Achse
     float sigma2 = roughness * roughness; // sigma^2
 
+    float A = 1 - 0.5f * sigma2 / (sigma2 + 0.57f);
+    float B = 0.45f * sigma2 / (sigma2 + 0.09f);
+    
+    float theta_L = acos(dot_clamp(l, n));
+    float theta_V = acos(dot_clamp(v, n));
+    
+    float alpha = theta_L;
+    float beta = theta_V;
+    if (theta_L < theta_V) {
+        alpha = theta_V;
+        beta = theta_L;
+    }
+
+    // Project L
+    vec3 proj_unnorm = l - dot_clamp(l, n) * n;
+    vec3 l_proj = normalize(proj_unnorm);
+    // Project V
+    proj_unnorm = v - dot_clamp(v, n) * v;
+    vec3 v_proj = normalize(proj_unnorm);
+
+    float cos_azimuth = dot_clamp(l_proj, v_proj);
+
+    float oren_nayar = cos(theta_L) * (A + (B * max(0.f, cos_azimuth) * sin(alpha) * tan(beta)));
+
     // TASK: implement Oren-Nayar Term and use instead of 1.0 below:
-    return lambert * 1.0;
+    return lambert * oren_nayar;
 }
 
 void main() {
