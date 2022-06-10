@@ -1,0 +1,244 @@
+{
+	"archive" : 
+	{
+		"commandFragments" : 
+		[
+			{
+				"fragment" : "/machine:x64",
+				"role" : "flags"
+			}
+		]
+	},
+	"artifacts" : 
+	[
+		{
+			"path" : "vendor/assimp/contrib/irrXML/IrrXMLd.lib"
+		}
+	],
+	"backtrace" : 1,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_library",
+			"install",
+			"ADD_COMPILE_OPTIONS",
+			"ADD_DEFINITIONS",
+			"INCLUDE_DIRECTORIES"
+		],
+		"files" : 
+		[
+			"vendor/assimp/contrib/irrXML/CMakeLists.txt",
+			"vendor/assimp/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 16,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 20,
+				"parent" : 0
+			},
+			{
+				"file" : 1
+			},
+			{
+				"command" : 2,
+				"file" : 1,
+				"line" : 227,
+				"parent" : 3
+			},
+			{
+				"command" : 2,
+				"file" : 1,
+				"line" : 228,
+				"parent" : 3
+			},
+			{
+				"command" : 3,
+				"file" : 0,
+				"line" : 13,
+				"parent" : 0
+			},
+			{
+				"command" : 3,
+				"file" : 0,
+				"line" : 12,
+				"parent" : 0
+			},
+			{
+				"command" : 4,
+				"file" : 1,
+				"line" : 201,
+				"parent" : 3
+			},
+			{
+				"command" : 4,
+				"file" : 1,
+				"line" : 374,
+				"parent" : 3
+			}
+		]
+	},
+	"compileGroups" : 
+	[
+		{
+			"compileCommandFragments" : 
+			[
+				{
+					"fragment" : "/DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1"
+				},
+				{
+					"backtrace" : 4,
+					"fragment" : "/MP"
+				},
+				{
+					"backtrace" : 5,
+					"fragment" : "/bigobj"
+				}
+			],
+			"defines" : 
+			[
+				{
+					"define" : "ASSIMP_BUILD_NO_C4D_IMPORTER"
+				},
+				{
+					"define" : "WIN32_LEAN_AND_MEAN"
+				},
+				{
+					"backtrace" : 6,
+					"define" : "_CRT_SECURE_NO_WARNINGS"
+				},
+				{
+					"backtrace" : 7,
+					"define" : "_SCL_SECURE_NO_WARNINGS"
+				}
+			],
+			"includes" : 
+			[
+				{
+					"backtrace" : 8,
+					"path" : "C:/Users/lenna/OneDrive/Documents/C++ Projekte/Pengwing/out/build/x64-Debug/vendor/assimp/include"
+				},
+				{
+					"backtrace" : 8,
+					"path" : "C:/Users/lenna/OneDrive/Documents/C++ Projekte/Pengwing/out/build/x64-Debug/vendor/assimp"
+				},
+				{
+					"backtrace" : 8,
+					"path" : "C:/Users/lenna/OneDrive/Documents/C++ Projekte/Pengwing/vendor/assimp/include"
+				},
+				{
+					"backtrace" : 8,
+					"path" : "C:/Users/lenna/OneDrive/Documents/C++ Projekte/Pengwing/vendor/assimp/."
+				},
+				{
+					"backtrace" : 9,
+					"path" : "C:/Users/lenna/OneDrive/Documents/C++ Projekte/Pengwing/vendor/assimp/contrib/zlib"
+				},
+				{
+					"backtrace" : 9,
+					"path" : "C:/Users/lenna/OneDrive/Documents/C++ Projekte/Pengwing/out/build/x64-Debug/vendor/assimp/contrib/zlib"
+				}
+			],
+			"language" : "CXX",
+			"sourceIndexes" : 
+			[
+				5
+			]
+		}
+	],
+	"id" : "IrrXML::@f1fa78227a12ba6b4b3f",
+	"install" : 
+	{
+		"destinations" : 
+		[
+			{
+				"backtrace" : 2,
+				"path" : "lib"
+			}
+		],
+		"prefix" : 
+		{
+			"path" : "C:/Users/lenna/OneDrive/Documents/C++ Projekte/Pengwing/out/install/x64-Debug"
+		}
+	},
+	"name" : "IrrXML",
+	"nameOnDisk" : "IrrXMLd.lib",
+	"paths" : 
+	{
+		"build" : "vendor/assimp/contrib/irrXML",
+		"source" : "vendor/assimp/contrib/irrXML"
+	},
+	"sourceGroups" : 
+	[
+		{
+			"name" : "Header Files",
+			"sourceIndexes" : 
+			[
+				0,
+				1,
+				2,
+				3,
+				4,
+				6
+			]
+		},
+		{
+			"name" : "Source Files",
+			"sourceIndexes" : 
+			[
+				5
+			]
+		}
+	],
+	"sources" : 
+	[
+		{
+			"backtrace" : 1,
+			"path" : "vendor/assimp/contrib/irrXML/CXMLReaderImpl.h",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"path" : "vendor/assimp/contrib/irrXML/heapsort.h",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"path" : "vendor/assimp/contrib/irrXML/irrArray.h",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"path" : "vendor/assimp/contrib/irrXML/irrString.h",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"path" : "vendor/assimp/contrib/irrXML/irrTypes.h",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "vendor/assimp/contrib/irrXML/irrXML.cpp",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"path" : "vendor/assimp/contrib/irrXML/irrXML.h",
+			"sourceGroupIndex" : 0
+		}
+	],
+	"type" : "STATIC_LIBRARY"
+}
