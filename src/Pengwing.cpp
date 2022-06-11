@@ -2,9 +2,11 @@
 #include "Shader.h"
 #include "mesh.hpp"
 #include "camera.hpp"
+#include "Object.h"
 
+#include <string>
 #include <chrono>
-#include <imgui.hpp>;
+#include <imgui.hpp>
 
 const int WINDOW_WIDTH =  1920;
 const int WINDOW_HEIGHT = 1080;
@@ -29,14 +31,15 @@ main(int, char* argv[]) {
     init_imgui(window);
 
     camera cam(window);
+    proj_matrix = glm::perspective(FOV, 1.f, NEAR_VALUE, FAR_VALUE);
 
+    // Loading Shaders
     Shader shader = Shader("basic_colors.vert", "basic_colors.frag");
 
-    // load and compile shaders and link program
-
-    std::vector<geometry> objects = loadScene("dragon.obj", true);
-    objects.push_back (loadMesh("suzanne.obj", true));
-    proj_matrix = glm::perspective(FOV, 1.f, NEAR_VALUE, FAR_VALUE);
+    // Loading Objects
+    std::vector<Object> objects = std::vector<Object>();
+    objects.push_back(Object(shader, loadMesh("dragon.obj", true)));   // 0 - Dragon
+    objects.push_back(Object(shader, loadMesh("suzanne.obj", true)));  // 1 - Suzanne
 
     glEnable(GL_DEPTH_TEST);
 
@@ -65,36 +68,31 @@ main(int, char* argv[]) {
         // Handle GUI
         imgui_new_frame(1920, 200);
         ImGui::Begin("Timeline", NULL, ImGuiWindowFlags_NoMove);
+        ImGui::Columns(2);
         ImGui::SetWindowPos(ImVec2(0, WINDOW_HEIGHT - ImGui::GetWindowSize().y));
         ImGui::SetWindowSize(ImVec2(1920, timeline_height));
         if (ImGui::Button("Start/Pause"))
         {
             play = !play;
         }
-        ImGui::SliderInt("Frame", &i_FRAME, 0, 30 * 60);
-        ImGui::SliderInt("Loop Start", &loop_start, 0, 30 * 60);
-        ImGui::SliderInt("Loop End", &loop_end, 0, 30 * 60);
+        //ImGui::SliderInt(std::to_string(i_FRAME / FPS).append("s Frame").c_str(), &i_FRAME, 0, duration * FPS);
+        ImGui::SliderInt("Frame", &i_FRAME, 0, duration * FPS);
+        ImGui::SliderInt("Loop Start", &loop_start, 0, duration * FPS);
+        ImGui::SliderInt("Loop End", &loop_end, 0, duration * FPS);
+        ImGui::NextColumn();
+        ImGui::Text("");
         ImGui::End();
-        ImGui::Begin("Other");
-        if (ImGui::Button("Start/Pause"))
-        {
-            play = !play;
+
+        ImGui::Begin("Objects");
+        for (unsigned int i = 0; i < objects.size(); ++i) {
+            ImGui::Checkbox(std::to_string(i).c_str(), &objects[i].active);
         }
         ImGui::End();
 
         // Render and Update Objects
         for (unsigned i = 0; i < objects.size(); ++i) {
-            glm::mat4 model_matrix = objects[i].transform;
-            model_matrix = glm::translate(model_matrix, glm::vec3(0.0f, sin(0.01f * i_FRAME), 0.0f));
-
-            shader.use();
-            shader.setMat4("model_mat", model_matrix);
-            shader.setMat4("view_mat", cam.view_matrix());
-            shader.setMat4("proj_mat", proj_matrix);
-            shader.setVec3("light_dir", glm::vec3(1.0f, 0.f, 0.f));
-
-            objects[i].bind();
-            glDrawElements(GL_TRIANGLES, objects[i].vertex_count, GL_UNSIGNED_INT, (void*) 0);
+            objects[i].update(i_FRAME);
+            objects[i].render(cam.view_matrix(), proj_matrix);
         }
 
         // Advance Timeline
