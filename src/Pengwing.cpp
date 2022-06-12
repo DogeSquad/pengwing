@@ -8,11 +8,29 @@
 #include <chrono>
 #include <imgui.hpp>
 
+// Window Settings
 const int WINDOW_WIDTH =  1920;
 const int WINDOW_HEIGHT = 1080;
+
+// Camera Settings
 const float FOV = 45.f;
 const float NEAR_VALUE = 0.1f;
 const float FAR_VALUE = 100.f;
+
+// GUI Settings
+const bool enableGUI = true;
+const int timeline_height = 200;
+
+// Timeline Settings
+const int FPS = 60;
+const float duration = 30;
+int i_FRAME = 0;
+int loop_start = 0;
+int loop_end = int(FPS * duration);
+bool play = true;
+
+// Forward Declaration
+void handleGUI(std::vector<Object> objects);
 
 #ifndef M_PI
 #define M_PI 3.14159265359
@@ -28,7 +46,7 @@ main(int, char* argv[]) {
     GLFWwindow* window = initOpenGL(WINDOW_WIDTH, WINDOW_HEIGHT,"Pengwing");
     glfwSetFramebufferSizeCallback(window, resizeCallback);
 
-    init_imgui(window);
+    if (enableGUI) init_imgui(window);
 
     camera cam(window);
     proj_matrix = glm::perspective(FOV, 1.f, NEAR_VALUE, FAR_VALUE);
@@ -43,17 +61,6 @@ main(int, char* argv[]) {
 
     glEnable(GL_DEPTH_TEST);
 
-    // GUI Settings
-    int timeline_height = 200;
-    
-    // Timeline Setting
-    int i_FRAME = 0;
-    int FPS = 60;
-    float duration = 30;
-    int loop_start = 0;
-    int loop_end = int(FPS * duration);
-    bool play = true;
-
     glfwMaximizeWindow(window);
     // rendering loop
     while (glfwWindowShouldClose(window) == false) {
@@ -65,29 +72,7 @@ main(int, char* argv[]) {
         glClearColor(0.25f, 0.25f, 0.25f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // Handle GUI
-        imgui_new_frame(1920, 200);
-        ImGui::Begin("Timeline", NULL, ImGuiWindowFlags_NoMove);
-        ImGui::Columns(2);
-        ImGui::SetWindowPos(ImVec2(0, WINDOW_HEIGHT - ImGui::GetWindowSize().y));
-        ImGui::SetWindowSize(ImVec2(1920, timeline_height));
-        if (ImGui::Button("Start/Pause"))
-        {
-            play = !play;
-        }
-        //ImGui::SliderInt(std::to_string(i_FRAME / FPS).append("s Frame").c_str(), &i_FRAME, 0, duration * FPS);
-        ImGui::SliderInt("Frame", &i_FRAME, 0, duration * FPS);
-        ImGui::SliderInt("Loop Start", &loop_start, 0, duration * FPS);
-        ImGui::SliderInt("Loop End", &loop_end, 0, duration * FPS);
-        ImGui::NextColumn();
-        ImGui::Text("");
-        ImGui::End();
-
-        ImGui::Begin("Objects");
-        for (unsigned int i = 0; i < objects.size(); ++i) {
-            ImGui::Checkbox(std::to_string(i).c_str(), &objects[i].active);
-        }
-        ImGui::End();
+        if (enableGUI) handleGUI(objects);
 
         // Render and Update Objects
         for (unsigned i = 0; i < objects.size(); ++i) {
@@ -105,7 +90,7 @@ main(int, char* argv[]) {
             }
         }
 
-        imgui_render();
+        if (enableGUI) imgui_render();
         glfwSwapBuffers(window);
         
         // FPS limiting
@@ -121,9 +106,33 @@ main(int, char* argv[]) {
     cleanup_imgui();
     glfwTerminate();
 }
+void handleGUI(std::vector<Object> objects) {
+    imgui_new_frame(1920, 200);
+    ImGui::Begin("Timeline", NULL, ImGuiWindowFlags_NoMove);
+    ImGui::Columns(2);
+    ImGui::SetWindowPos(ImVec2(0, WINDOW_HEIGHT - ImGui::GetWindowSize().y));
+    ImGui::SetWindowSize(ImVec2(1920, timeline_height));
+    if (ImGui::Button("Start/Pause"))
+    {
+        play = !play;
+    }
+    //ImGui::SliderInt(std::to_string(i_FRAME / FPS).append("s Frame").c_str(), &i_FRAME, 0, duration * FPS);
+    ImGui::SliderInt("Frame", &i_FRAME, 0, duration * FPS);
+    ImGui::SliderInt("Loop Start", &loop_start, 0, duration * FPS);
+    ImGui::SliderInt("Loop End", &loop_end, 0, duration * FPS);
+    ImGui::NextColumn();
+    ImGui::Text("");
+    ImGui::End();
 
-void resizeCallback(GLFWwindow*, int width, int height)
-{
+    //ImGui::Begin("Objects");
+    //for (unsigned int i = 0; i < objects.size(); ++i) {
+    //    ImGui::Checkbox(std::to_string(i).c_str(), &objects[i].active);
+    //}
+    //ImGui::End();
+}
+
+
+void resizeCallback(GLFWwindow*, int width, int height) {
     // set new width and height as viewport size
     glViewport(0, 0, width, height);
     proj_matrix = glm::perspective(FOV, static_cast<float>(width) / height, NEAR_VALUE, FAR_VALUE);
