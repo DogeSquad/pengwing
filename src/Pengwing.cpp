@@ -110,8 +110,8 @@ main(int, char* argv[]) {
         
         // FPS limiting
         end = std::chrono::system_clock::now();
-        std::chrono::duration<double, std::milli> elapsed_seconds = end - start;
-        Sleep(glm::max(0.0, 1 / FPS -  elapsed_seconds.count()));
+        std::chrono::duration<double, std::milli> elapsed_milliseconds = end - start;
+        Sleep(glm::max(0.0, 1000.0 / double(FPS) - elapsed_milliseconds.count()));
     }
 
     for (unsigned int i = 0; i < objects.size(); ++i) {
