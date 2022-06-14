@@ -3,6 +3,7 @@
 #include "mesh.hpp"
 #include "camera.hpp"
 #include "Object.h"
+#include "Drache.h"
 
 #include <string>
 #include <chrono>
@@ -30,7 +31,7 @@ int loop_end = int(FPS * duration);
 bool play = true;
 
 // Forward Declaration
-void handleGUI(std::vector<Object> objects);
+void handleGUI(std::vector<Object*> objects);
 
 #ifndef M_PI
 #define M_PI 3.14159265359
@@ -55,9 +56,9 @@ main(int, char* argv[]) {
     Shader shader = Shader("basic_colors.vert", "basic_colors.frag");
 
     // Loading Objects
-    std::vector<Object> objects = std::vector<Object>();
-    objects.push_back(Object(shader, loadMesh("dragon.obj", true)));   // 0 - Dragon
-    objects.push_back(Object(shader, loadMesh("suzanne.obj", true)));  // 1 - Suzanne
+    std::vector<Object*> objects;
+    objects.push_back(new Object(shader, loadMesh("suzanne.obj", true), "Monke"));
+    objects.push_back(new Drache(shader, loadMesh("dragon.obj", true), "Drache"));
 
     glEnable(GL_DEPTH_TEST);
 
@@ -76,8 +77,8 @@ main(int, char* argv[]) {
 
         // Render and Update Objects
         for (unsigned i = 0; i < objects.size(); ++i) {
-            objects[i].update(i_FRAME);
-            objects[i].render(cam.view_matrix(), proj_matrix);
+            objects[i]->update(i_FRAME);
+            objects[i]->render(cam.view_matrix(), proj_matrix);
         }
 
         // Advance Timeline
@@ -100,13 +101,14 @@ main(int, char* argv[]) {
     }
 
     for (unsigned int i = 0; i < objects.size(); ++i) {
-        objects[i].destroy();
+        objects[i]->destroy();
     }
     
     cleanup_imgui();
     glfwTerminate();
 }
-void handleGUI(std::vector<Object> objects) {
+
+void handleGUI(std::vector<Object*> objects) {
     imgui_new_frame(1920, 200);
     ImGui::Begin("Timeline", NULL, ImGuiWindowFlags_NoMove);
     ImGui::Columns(2);
@@ -124,14 +126,13 @@ void handleGUI(std::vector<Object> objects) {
     ImGui::Text("");
     ImGui::End();
 
-    //ImGui::Begin("Objects");
-    //for (unsigned int i = 0; i < objects.size(); ++i) {
-    //    ImGui::Checkbox(std::to_string(i).c_str(), &objects[i].active);
-    //}
-    //ImGui::End();
+    ImGui::Begin("Objects", NULL, ImGuiWindowFlags_NoMove);
+    ImGui::SetWindowPos(ImVec2(0, 0));
+    for (unsigned int i = 0; i < objects.size(); ++i) {
+        ImGui::Checkbox(objects[i]->name, &objects[i]->active);
+    }
+    ImGui::End();
 }
-
-
 void resizeCallback(GLFWwindow*, int width, int height) {
     // set new width and height as viewport size
     glViewport(0, 0, width, height);
