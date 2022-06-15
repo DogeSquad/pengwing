@@ -55,6 +55,8 @@ main(int, char* argv[]) {
     // Loading Shaders
     Shader shader = Shader("basic_colors.vert", "basic_colors.frag");
 
+    // Loading Texture
+
     // Loading Objects
     std::vector<Object*> objects;
     objects.push_back(new Object(shader, loadMesh("suzanne.obj", true), "Monke"));

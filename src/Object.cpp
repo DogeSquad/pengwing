@@ -24,5 +24,5 @@ void Object::update(int frame) {
 
     this->shader.use();
     this->shader.setMat4("model_mat", model_matrix);
-    this->shader.setVec3("light_dir", glm::vec3(1.0f, 0.f, 0.f));
+    this->shader.setVec3("light_dir", glm::vec3(0.0f, 1.0f, 0.0f));
 }
