@@ -1,6 +1,6 @@
 #include "Object.h"
 
-Object::Object(Shader shader, geometry object_geometry, glm::mat4* parent, const char* name)
+Object::Object(Shader shader, std::vector<geometry> object_geometry, glm::mat4* parent, const char* name)
 {
     this->name = name;
     this->shader = shader;
@@ -13,7 +13,10 @@ Object::Object(Shader shader, geometry object_geometry, glm::mat4* parent, const
 }
 void Object::destroy() 
 {
-    this->object_geometry.destroy();
+    for (int i = 0; i < this->object_geometry.size(); i++)
+    {
+        this->object_geometry[i].destroy();
+    }
 }
 void Object::render(glm::mat4 view_mat, glm::mat4 proj_mat) 
 {
@@ -21,13 +24,17 @@ void Object::render(glm::mat4 view_mat, glm::mat4 proj_mat)
     this->shader.use();
     this->shader.setMat4("view_mat", view_mat);
     this->shader.setMat4("proj_mat", proj_mat);
-    this->object_geometry.bind();
-	glDrawElements(GL_TRIANGLES, this->object_geometry.vertex_count, GL_UNSIGNED_INT, (void*)0);
+
+    for (int i = 0; i < this->object_geometry.size(); i++)
+    {
+        this->object_geometry[i].bind();
+	    glDrawElements(GL_TRIANGLES, this->object_geometry[i].vertex_count, GL_UNSIGNED_INT, (void*)0);
+    }
 }
 void Object::update(unsigned int frame)
 {
     if (!this->active) return;
-    this->model_matrix = this->object_geometry.transform;
+    this->model_matrix = glm::identity<glm::mat4>();
     this->model_matrix = glm::translate(model_matrix, this->position);
     this->model_matrix = glm::rotate(model_matrix, this->rotation.w, glm::vec3(this->rotation.x, this->rotation.y, this->rotation.z));
     this->model_matrix = glm::scale(model_matrix, this->scale);

@@ -1,7 +1,7 @@
 #include "common.hpp"
 #include "Shader.h"
 #include "mesh.hpp"
-#include "camera.hpp"
+#include "camera_orbital.hpp"
 #include "Object.h"
 #include "Drache.h"
 
@@ -50,11 +50,12 @@ main(int, char* argv[]) {
 
     if (enableGUI) init_imgui(window);
 
-    camera cam(window);
+    camera_orbital cam(window);
     proj_matrix = glm::perspective(FOV, 1.f, NEAR_VALUE, FAR_VALUE);
 
     // Loading Shaders
     Shader shader = Shader("basic_colors.vert", "basic_colors.frag");
+    Shader sunglasses_shader = Shader("basic_colors.vert", "basic_colors_black.frag");
 
     // Loading Texture
 
@@ -62,9 +63,16 @@ main(int, char* argv[]) {
     glm::mat4 scene = glm::identity<glm::mat4>();
 
     std::vector<Object*> objects;
-    objects.push_back(new Drache(shader, loadMesh("dragon.obj", true), &scene, "Drache"));
-    objects.push_back(new Object(shader, loadMesh("plane.obj", true), &objects[0]->model_matrix, "Plane"));
-    objects[1]->scale = glm::vec3(10.0f, 1.0f, 10.0f);
+    {
+        objects.push_back(new Drache(shader, loadScene("dragon.obj", true), &scene, "Drache"));
+        objects.push_back(new Object(sunglasses_shader, loadScene("sunglasses.obj", true), &objects[0]->model_matrix, "Sunglasses"));
+        objects[1]->position = glm::vec3(-4.9f, 8.1f, -0.1f);
+        objects[1]->rotation = glm::vec4(0.0f, 1.0f, 0.0f, glm::half_pi<float>()+0.4f);
+        objects[1]->scale = glm::vec3(19.0f, 19.0f, 19.0f);
+    }
+
+    objects.push_back(new Object(shader, loadScene("plane.obj", true), &scene, "Plane"));
+    objects[2]->scale = glm::vec3(10.0f, 1.0f, 10.0f);
 
     glEnable(GL_DEPTH_TEST);
 

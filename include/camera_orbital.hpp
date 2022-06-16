@@ -2,10 +2,10 @@
 
 #include "common.hpp"
 
-struct camera {
-    camera(GLFWwindow* window);
+struct camera_orbital {
+    camera_orbital(GLFWwindow* window);
 
-    virtual ~camera();
+    virtual ~camera_orbital();
 
     glm::mat4
     view_matrix() const;

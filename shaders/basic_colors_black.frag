@@ -11,5 +11,5 @@ void main()
 {
     float amb_light = 0.01f;
     vec4 world_light_dir = view_mat * vec4(light_dir, 0.0f);
-    frag_color = vec4(0.6f, 0.6f, 0.9f, 1.0f) * max(amb_light, dot(world_light_dir.xyz, i_normal));
+    frag_color = vec4(0.05f, 0.05f, 0.05f, 1.0f) * max(amb_light, dot(world_light_dir.xyz, i_normal));
 }

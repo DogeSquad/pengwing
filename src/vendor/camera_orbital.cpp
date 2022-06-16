@@ -1,4 +1,4 @@
-#include <camera.hpp>
+#include <camera_orbital.hpp>
 
 #ifndef M_PI
 #define M_PI 3.14159265359
@@ -166,7 +166,7 @@ scroll(int delta) {
     update();
 }
 
-camera::camera(GLFWwindow* window) {
+camera_orbital::camera_orbital(GLFWwindow* window) {
     state = new camera_state({});
 
     state->last_x = 0;
@@ -191,17 +191,17 @@ camera::camera(GLFWwindow* window) {
     glfwSetScrollCallback(window, [] (GLFWwindow*, double , double delta) { scroll(static_cast<int>(-delta)); });
 }
 
-camera::~camera() {
+camera_orbital::~camera_orbital() {
     delete [] state;
 }
 
 glm::mat4
-camera::view_matrix() const {
+camera_orbital::view_matrix() const {
     return state->view_mat;
 }
 
 glm::vec3
-camera::position() const {
+camera_orbital::position() const {
     glm::mat3 R(state->view_mat);
     glm::vec3 t(state->view_mat[3]);
     return -glm::transpose(R) * t;
