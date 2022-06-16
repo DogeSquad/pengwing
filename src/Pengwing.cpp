@@ -59,11 +59,12 @@ main(int, char* argv[]) {
     // Loading Texture
 
     // Loading Objects
-    std::vector<Object*> objects;
-    objects.push_back(new Object(shader, loadMesh("plane.obj", true), "Plane"));
-    objects.push_back(new Drache(shader, loadMesh("dragon.obj", true), "Drache"));
+    glm::mat4 scene = glm::identity<glm::mat4>();
 
-    objects[0]->scale = glm::vec3(10.0f, 1.0f, 10.0f);
+    std::vector<Object*> objects;
+    objects.push_back(new Drache(shader, loadMesh("dragon.obj", true), &scene, "Drache"));
+    objects.push_back(new Object(shader, loadMesh("plane.obj", true), &objects[0]->model_matrix, "Plane"));
+    objects[1]->scale = glm::vec3(10.0f, 1.0f, 10.0f);
 
     glEnable(GL_DEPTH_TEST);
 
