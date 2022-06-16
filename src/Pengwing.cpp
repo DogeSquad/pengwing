@@ -19,7 +19,7 @@ const float NEAR_VALUE = 0.1f;
 const float FAR_VALUE = 100.f;
 
 // GUI Settings
-const bool enableGUI = true;
+bool enableGUI = true;
 const int timeline_height = 200;
 
 // Timeline Settings
@@ -32,6 +32,7 @@ bool play = true;
 
 // Forward Declaration
 void handleGUI(std::vector<Object*> objects);
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
 #ifndef M_PI
 #define M_PI 3.14159265359
@@ -59,11 +60,14 @@ main(int, char* argv[]) {
 
     // Loading Objects
     std::vector<Object*> objects;
-    objects.push_back(new Object(shader, loadMesh("suzanne.obj", true), "Monke"));
+    objects.push_back(new Object(shader, loadMesh("plane.obj", true), "Plane"));
     objects.push_back(new Drache(shader, loadMesh("dragon.obj", true), "Drache"));
+
+    objects[0]->scale = glm::vec3(10.0f, 1.0f, 10.0f);
 
     glEnable(GL_DEPTH_TEST);
 
+    glfwSetKeyCallback(window, key_callback);
     glfwMaximizeWindow(window);
     // rendering loop
     while (glfwWindowShouldClose(window) == false) {
@@ -110,6 +114,14 @@ main(int, char* argv[]) {
     glfwTerminate();
 }
 
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    if (key == GLFW_KEY_G && action == GLFW_PRESS)
+        enableGUI = !enableGUI;
+    if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
+        play = !play;
+}
+
 void handleGUI(std::vector<Object*> objects) {
     imgui_new_frame(1920, 200);
     ImGui::Begin("Timeline", NULL, ImGuiWindowFlags_NoMove);
@@ -131,7 +143,7 @@ void handleGUI(std::vector<Object*> objects) {
     ImGui::Begin("Objects", NULL, ImGuiWindowFlags_NoMove);
     ImGui::SetWindowPos(ImVec2(0, 0));
     for (unsigned int i = 0; i < objects.size(); ++i) {
-        ImGui::Checkbox(objects[i]->name, &objects[i]->active);
+        ImGui::Checkbox(std::string(objects[i]->name).c_str(), &objects[i]->active);
     }
     ImGui::End();
 }
