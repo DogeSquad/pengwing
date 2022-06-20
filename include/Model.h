@@ -17,9 +17,9 @@ public:
     {
 
     }
-    Model(char* path)
+    Model(char* path, bool smooth)
     {
-        loadModel(DATA_ROOT + "../models/" + path);
+        loadModel(DATA_ROOT + "../models/" + path, smooth);
     }
     void Draw(Shader& shader);
 private:
@@ -28,7 +28,7 @@ private:
     vector<Mesh::Texture> textures_loaded;
     string directory;
 
-    void loadModel(string path);
+    void loadModel(string path, bool smooth);
     void processNode(aiNode* node, const aiScene* scene);
     Mesh processMesh(aiMesh* mesh, const aiScene* scene);
     vector<Mesh::Texture> loadMaterialTextures(aiMaterial* mat, aiTextureType type,

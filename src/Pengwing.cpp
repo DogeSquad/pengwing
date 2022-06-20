@@ -48,31 +48,38 @@ main(int, char* argv[]) {
     GLFWwindow* window = initOpenGL(WINDOW_WIDTH, WINDOW_HEIGHT,"Pengwing");
     glfwSetFramebufferSizeCallback(window, resizeCallback);
 
+    stbi_set_flip_vertically_on_load(true);
+
     if (enableGUI) init_imgui(window);
 
     camera_orbital cam(window);
     proj_matrix = glm::perspective(FOV, 1.f, NEAR_VALUE, FAR_VALUE);
 
     // Loading Shaders
+    Shader backpack = Shader("basic_textured.vert", "basic_textured.frag");
     Shader shader = Shader("basic_colors.vert", "basic_colors.frag");
     Shader sunglasses_shader = Shader("basic_colors.vert", "basic_colors_black.frag");
-
-    // Loading Texture
 
     // Loading Objects
     glm::mat4 scene = glm::identity<glm::mat4>();
 
     std::vector<Object*> objects;
     {
-        objects.push_back(new Drache(shader, Model("dragon.obj"), &scene, "Drache"));
-        objects.push_back(new Object(sunglasses_shader, Model("sunglasses.obj"), &objects[0]->model_matrix, "Sunglasses"));
+        objects.push_back(new Drache(shader, Model("dragon.obj", true), &scene, "Drache"));
+        objects[0]->active = false;
+        objects.push_back(new Object(sunglasses_shader, Model("sunglasses.obj", true), &objects[0]->model_matrix, "Sunglasses"));
         objects[1]->position = glm::vec3(-4.9f, 8.1f, -0.1f);
         objects[1]->rotation = glm::vec4(0.0f, 1.0f, 0.0f, glm::half_pi<float>()+0.4f);
         objects[1]->scale = glm::vec3(19.0f, 19.0f, 19.0f);
+        objects[1]->active = false;
     }
 
-    objects.push_back(new Object(shader, Model("plane.obj"), &scene, "Plane"));
+    objects.push_back(new Object(shader, Model("plane.obj", false), &scene, "Plane"));
     objects[2]->scale = glm::vec3(10.0f, 1.0f, 10.0f);
+    objects[1]->active = false;
+
+    objects.push_back(new Drache(backpack, Model("backpack.obj", true), &scene, "Backpack"));
+    objects[3]->position = glm::vec3(0.0f, 0.0f, 0.0f);
 
     glEnable(GL_DEPTH_TEST);
 

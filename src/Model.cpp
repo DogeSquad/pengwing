@@ -10,10 +10,17 @@ void Model::Draw(Shader& shader)
         this->meshes[i].Draw(shader);
 }
 
-void Model::loadModel(string path)
+void Model::loadModel(string path, bool smooth)
 {
-    Assimp::Importer import;
-    const aiScene* scene = import.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
+    Assimp::Importer import; // Make the normal generation smooth
+    int process = aiProcess_Triangulate | aiProcess_JoinIdenticalVertices | aiProcess_FlipUVs;
+    if (smooth) {
+        process |= aiProcess_GenSmoothNormals;
+    }
+    else {
+        process |= aiProcess_GenNormals;
+    }
+    const aiScene* scene = import.ReadFile(path, process);
 
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
     {
