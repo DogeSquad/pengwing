@@ -10,6 +10,13 @@ Object::Object(Shader shader, Model model, glm::mat4* parent, const char* name)
     this->position = glm::vec3(0.0f);
     this->rotation = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
     this->scale = glm::vec3(1.0f);
+
+    shader.use();
+    shader.setFloat("material.shininess", 0.3f);
+    shader.setVec3("light.position", glm::vec3(5.0f, 5.0f, 5.0f));
+    shader.setVec3("light.ambient", glm::vec3(0.0f, 0.0f, 0.0f));
+    shader.setVec3("light.diffuse", glm::vec3(0.0f, 0.0f, 0.0f));
+    shader.setVec3("light.specular", glm::vec3(0.1f, 0.1f, 0.1f));
 }
 void Object::destroy() 
 {
@@ -26,7 +33,6 @@ void Object::render(glm::mat4 view_mat, glm::mat4 proj_mat)
 }
 void Object::update(unsigned int frame)
 {
-    if (!this->active) return;
     this->model_matrix = glm::identity<glm::mat4>();
     this->model_matrix = glm::translate(model_matrix, this->position);
     this->model_matrix = glm::rotate(model_matrix, this->rotation.w, glm::vec3(this->rotation.x, this->rotation.y, this->rotation.z));
