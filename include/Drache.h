@@ -3,7 +3,7 @@
 
 class Drache : public Object{
 public:
-	Drache(Shader shader, std::vector<geometry> object_geometry, glm::mat4* parent, const char* name);
+	Drache(Shader shader, Model model, glm::mat4* parent, const char* name);
 	void Drache::update(unsigned int frame) override;
 	Animator positionAnimator;
 	Animator rotationAnimator;

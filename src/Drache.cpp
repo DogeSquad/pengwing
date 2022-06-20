@@ -5,7 +5,7 @@ void setupPositionAnimation(Animator* positionAnimator);
 void setupRotationAnimation(Animator* rotationAnimator);
 void setupScaleAnimation(Animator* scaleAnimator);
 
-Drache::Drache(Shader shader, std::vector<geometry> object_geometry, glm::mat4* parent, const char* name) : Object(shader, object_geometry, parent, name)
+Drache::Drache(Shader shader, Model model, glm::mat4* parent, const char* name) : Object(shader, model, parent, name)
 {
     this->positionAnimator = Animator(glm::vec4(this->position.x, this->position.y, this->position.z, 0.0f));
     this->rotationAnimator = Animator(this->rotation);

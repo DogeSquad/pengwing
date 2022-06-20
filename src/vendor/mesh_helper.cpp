@@ -1,4 +1,4 @@
-#include <mesh.hpp>
+#include <mesh_helper.hpp>
 
 #include <functional>
 #include <assimp/Importer.hpp>

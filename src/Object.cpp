@@ -1,10 +1,10 @@
 #include "Object.h"
 
-Object::Object(Shader shader, std::vector<geometry> object_geometry, glm::mat4* parent, const char* name)
+Object::Object(Shader shader, Model model, glm::mat4* parent, const char* name)
 {
     this->name = name;
     this->shader = shader;
-    this->object_geometry = object_geometry;
+    this->model = model;
     this->active = true;
     this->parent = parent;
     this->position = glm::vec3(0.0f);
@@ -13,10 +13,7 @@ Object::Object(Shader shader, std::vector<geometry> object_geometry, glm::mat4* 
 }
 void Object::destroy() 
 {
-    for (int i = 0; i < this->object_geometry.size(); i++)
-    {
-        this->object_geometry[i].destroy();
-    }
+
 }
 void Object::render(glm::mat4 view_mat, glm::mat4 proj_mat) 
 {
@@ -25,11 +22,7 @@ void Object::render(glm::mat4 view_mat, glm::mat4 proj_mat)
     this->shader.setMat4("view_mat", view_mat);
     this->shader.setMat4("proj_mat", proj_mat);
 
-    for (int i = 0; i < this->object_geometry.size(); i++)
-    {
-        this->object_geometry[i].bind();
-	    glDrawElements(GL_TRIANGLES, this->object_geometry[i].vertex_count, GL_UNSIGNED_INT, (void*)0);
-    }
+    this->model.Draw(this->shader);
 }
 void Object::update(unsigned int frame)
 {
