@@ -4,6 +4,11 @@
 // Forward Declaration
 unsigned int TextureFromFile(const char* path, const string& directory, bool gamma = false);
 
+Model::Model()
+{
+
+}
+
 void Model::Draw(Shader& shader)
 {
     for (unsigned int i = 0; i < this->meshes.size(); i++)
