@@ -67,7 +67,7 @@ main(int, char* argv[]) {
 
     std::vector<Object*> objects = std::vector<Object*>();
     {
-        objects.push_back(new Object(shader, Model("dragon.obj", true), &scene_mat, "Drache"));
+        objects.push_back(new Drache(shader, Model("dragon.obj", true), &scene_mat, "Drache"));
         objects[0]->active = false;
         objects.push_back(new Object(sunglasses_shader, Model("sunglasses/sunglasses.obj", true), &objects[0]->model_matrix, "Sunglasses"));
         objects[1]->position = glm::vec3(-4.9f, 8.1f, -0.1f);
@@ -78,6 +78,7 @@ main(int, char* argv[]) {
 
     objects.push_back(new Object(shader, Model("plane.obj", false), &scene_mat, "Plane"));
     objects[2]->scale = glm::vec3(10.0f, 1.0f, 10.0f);
+    objects[2]->position = glm::vec3(0.0f, -2.0f, 0.0f);
     objects[2]->active = false;
 
     objects.push_back(new Drache(albedo_texture, Model("backpack/backpack.obj", true), &scene_mat, "Backpack"));

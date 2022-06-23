@@ -24,7 +24,6 @@ void Drache::setupPositionAnimation(Animator* positionAnimator)
 {
     positionAnimator->AddKeyframe( 120, glm::vec4(0.0f, 0.0f, 0.0f, 0.0f), Animator::HOLD);
     positionAnimator->AddKeyframe( 180, glm::vec4(0.0f, 5.0f, 0.0f, 0.0f), Animator::EASE_OUT);
-    positionAnimator->AddKeyframe( 240, glm::vec4(0.0f, 5.0f, 0.0f, 0.0f), Animator::HOLD);
     positionAnimator->AddKeyframe( 300, glm::vec4(0.0f, 5.0f, 0.0f, 0.0f), Animator::HOLD);
     positionAnimator->AddKeyframe( 360, glm::vec4(0.0f, 0.0f, 0.0f, 0.0f), Animator::EASE_OUT_BOUNCE);
     positionAnimator->AddKeyframe( 480, glm::vec4(0.0f, 0.0f, 0.0f, 0.0f), Animator::HOLD);

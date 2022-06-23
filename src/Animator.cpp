@@ -7,6 +7,7 @@ float easeOutCubic(float x);
 float easeInOutCubic(float x);
 float easeOutBounce(float x);
 float easeOutElastic(float x);
+float easeOutShake(float x);
 
 Animator::Animator()
 {
@@ -105,6 +106,14 @@ glm::vec4 Animator::updateVector(unsigned int frame)
 			return currentKeyframe.vector + t * diff;
 			break;
 		}
+	case EASE_OUT_SHAKE:
+		{
+			float t = ((float)frame - currentKeyframe.frame) / (nextKeyframe.frame - currentKeyframe.frame);
+			glm::vec4 diff = nextKeyframe.vector - currentKeyframe.vector;
+			t = easeOutShake(t);
+			return currentKeyframe.vector + t * diff;
+			break;
+		}
 	default:
 		{
 			return currentKeyframe.vector;
@@ -149,4 +158,8 @@ float easeOutElastic(float x)
 	constexpr float c4 = (2 * glm::pi<float>()) / 3;
 
 	return x == 0.0f ? 0.0f : x == 1.0f ? 1.0f : pow(2, -10 * x) * sin((x * 10.0f - 0.75f) * c4) + 1.0f;
+}
+float easeOutShake(float x)
+{
+	return 3.0f * pow(x, 0.5) * pow(1 - x, 3) * 1.4f * sin(103.0f * x);
 }

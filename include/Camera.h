@@ -10,6 +10,8 @@ public:
 	glm::mat4 viewMatrix();
 
 	void setupRotationAnimation(Animator* rotationAnimator);
+	void setupPositionAnimation(Animator* positionAnimator);
 
 	Animator rotationAnimator;
+	Animator positionAnimator;
 };

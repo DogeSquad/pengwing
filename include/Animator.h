@@ -3,6 +3,7 @@
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 
+#include <random>
 #include <vector>
 
 class Animator {
@@ -14,6 +15,7 @@ public:
 	static const unsigned int EASE_OUT = 4;
 	static const unsigned int EASE_OUT_BOUNCE = 5;
 	static const unsigned int EASE_OUT_ELASTIC = 6;
+	static const unsigned int EASE_OUT_SHAKE = 7;
 	struct Keyframe {
 		unsigned int frame;
 		glm::vec4 vector;
