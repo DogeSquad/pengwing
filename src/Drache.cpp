@@ -1,11 +1,7 @@
 #include "Drache.h"
 
-// Forward Declaration
-void setupPositionAnimation(Animator* positionAnimator);
-void setupRotationAnimation(Animator* rotationAnimator);
-void setupScaleAnimation(Animator* scaleAnimator);
 
-Drache::Drache(Shader shader, Model model, glm::mat4* parent, const char* name) : Object(shader, model, parent, name)
+Drache::Drache(Shader shader, Model model, glm::mat4* parent, const char* name) : Object::Object(shader, model, parent, name)
 {
     this->positionAnimator = Animator(glm::vec4(this->position.x, this->position.y, this->position.z, 0.0f));
     this->rotationAnimator = Animator(this->rotation);
@@ -24,7 +20,7 @@ void Drache::update(unsigned int frame)
     Object::update(frame);
 }
 
-void setupPositionAnimation(Animator* positionAnimator)
+void Drache::setupPositionAnimation(Animator* positionAnimator)
 {
     positionAnimator->AddKeyframe( 120, glm::vec4(0.0f, 0.0f, 0.0f, 0.0f), Animator::HOLD);
     positionAnimator->AddKeyframe( 180, glm::vec4(0.0f, 5.0f, 0.0f, 0.0f), Animator::EASE_OUT);
@@ -36,7 +32,7 @@ void setupPositionAnimation(Animator* positionAnimator)
     positionAnimator->AddKeyframe(1800, glm::vec4(0.0f, 0.0f, 0.0f, 0.0f), Animator::HOLD);
 }
 
-void setupRotationAnimation(Animator* rotationAnimator)
+void Drache::setupRotationAnimation(Animator* rotationAnimator)
 {
     rotationAnimator->AddKeyframe( 120, glm::vec4(0.0f, 1.0f, 0.0f, 0.0f), Animator::HOLD);
     rotationAnimator->AddKeyframe( 180, glm::vec4(0.0f, 1.0f, 0.0f, 0.0f), Animator::HOLD);
@@ -47,7 +43,7 @@ void setupRotationAnimation(Animator* rotationAnimator)
     rotationAnimator->AddKeyframe(1800, glm::vec4(0.0f, 1.0f, 0.0f, 0.0f), Animator::HOLD);
 }
 
-void setupScaleAnimation(Animator* scaleAnimator)
+void Drache::setupScaleAnimation(Animator* scaleAnimator)
 {
     scaleAnimator->AddKeyframe(120, glm::vec4(1.0f, 1.0f, 1.0f, 0.0f), Animator::HOLD);
     scaleAnimator->AddKeyframe(180, glm::vec4(1.0f, 1.0f, 1.0f, 0.0f), Animator::HOLD);

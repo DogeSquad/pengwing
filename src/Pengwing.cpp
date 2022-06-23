@@ -4,6 +4,7 @@
 #include "camera_orbital.hpp"
 #include "Object.h"
 #include "Drache.h"
+#include "Camera.h"
 
 #include <string>
 #include <chrono>
@@ -52,7 +53,7 @@ main(int, char* argv[]) {
 
     if (enableGUI) init_imgui(window);
 
-    camera_orbital cam(window);
+    //camera_orbital cam(window);
     proj_matrix = glm::perspective(FOV, 1.f, NEAR_VALUE, FAR_VALUE);
 
 
@@ -66,7 +67,7 @@ main(int, char* argv[]) {
 
     std::vector<Object*> objects = std::vector<Object*>();
     {
-        objects.push_back(new Drache(shader, Model("dragon.obj", true), &scene_mat, "Drache"));
+        objects.push_back(new Object(shader, Model("dragon.obj", true), &scene_mat, "Drache"));
         objects[0]->active = false;
         objects.push_back(new Object(sunglasses_shader, Model("sunglasses/sunglasses.obj", true), &objects[0]->model_matrix, "Sunglasses"));
         objects[1]->position = glm::vec3(-4.9f, 8.1f, -0.1f);
@@ -82,6 +83,8 @@ main(int, char* argv[]) {
     objects.push_back(new Drache(albedo_texture, Model("backpack/backpack.obj", true), &scene_mat, "Backpack"));
     objects[3]->position = glm::vec3(0.0f, 0.0f, 0.0f);
     objects[3]->active = true;
+
+    Camera cam = Camera(&scene_mat, "Camera");
     // --
     // ---------------------------------------------------
 
@@ -101,10 +104,12 @@ main(int, char* argv[]) {
 
         if (enableGUI) handleGUI(objects);
 
+        cam.update(i_FRAME);
+
         // Render and Update Objects
         for (unsigned i = 0; i < objects.size(); ++i) {
             objects[i]->update(i_FRAME);
-            objects[i]->render(cam.view_matrix(), proj_matrix);
+            objects[i]->render(cam.viewMatrix(), proj_matrix);
         }
 
         // Advance Timeline
