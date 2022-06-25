@@ -5,14 +5,16 @@
 #include "Object.h"
 #include "Drache.h"
 #include "Camera.h"
+#include "Postprocessing.h"
 
 #include <string>
 #include <chrono>
 #include <imgui.hpp>
 
 // Window Settings
-const int WINDOW_WIDTH =  1920;
-const int WINDOW_HEIGHT = 1080;
+const int WINDOW_WIDTH       = 1920;
+const int WINDOW_HEIGHT      = 1080;
+constexpr float ASPECT_RATIO = static_cast<float>(WINDOW_WIDTH) / static_cast<float>(WINDOW_HEIGHT);
 
 // Camera Settings
 const float FOV = 45.f;
@@ -34,6 +36,8 @@ bool play = true;
 // Forward Declaration
 void handleGUI(std::vector<Object*> objects);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
+void render_scene(std::vector<Object*> objects, Camera* cam, unsigned int frame);
+void render_depth(std::vector<Object*> objects, Shader* shader, unsigned int frame);
 
 #ifndef M_PI
 #define M_PI 3.14159265359
@@ -46,6 +50,12 @@ resizeCallback(GLFWwindow* window, int width, int height);
 
 int
 main(int, char* argv[]) {
+    glfwInit();
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_SAMPLES, 4);
+
     GLFWwindow* window = initOpenGL(WINDOW_WIDTH, WINDOW_HEIGHT,"Pengwing");
     glfwSetFramebufferSizeCallback(window, resizeCallback);
 
@@ -68,102 +78,71 @@ main(int, char* argv[]) {
 
     {
         objects.push_back(new Drache(shader, Model("dragon.obj", true), &scene_mat, "Drache"));
-        objects[0]->active = false;
+        objects[0]->active = true;
         objects.push_back(new Object(sunglasses_shader, Model("sunglasses/sunglasses.obj", true), &objects[0]->model_matrix, "Sunglasses"));
         objects[1]->position = glm::vec3(-4.9f, 8.1f, -0.1f);
         objects[1]->rotation = glm::vec4(0.0f, 1.0f, 0.0f, glm::half_pi<float>() + 0.4f);
         objects[1]->scale = glm::vec3(19.0f, 19.0f, 19.0f);
-        objects[1]->active = false;
+        objects[1]->active = true;
     }
 
     objects.push_back(new Object(shader, Model("plane.obj", false), &scene_mat, "Plane"));
     objects[2]->scale = glm::vec3(10.0f, 1.0f, 10.0f);
-    objects[2]->position = glm::vec3(0.0f, -2.0f, 0.0f);
-    objects[2]->active = false;
+    objects[2]->position = glm::vec3(0.0f, 0.0f, 0.0f);
+    objects[2]->active = true;
 
     objects.push_back(new Drache(albedo_texture, Model("backpack/backpack.obj", true), &scene_mat, "Backpack"));
     objects[3]->position = glm::vec3(0.0f, 0.0f, 0.0f);
-    objects[3]->active = true;
-
-
-    Camera cam = Camera(&scene_mat, "Camera");
+    objects[3]->active = false;
     // --
     // ---------------------------------------------------
     
-    // Set up Post Processing Quad A
-    unsigned int framebufferA;
-    glGenFramebuffers(1, &framebufferA);
-    glBindFramebuffer(GL_FRAMEBUFFER, framebufferA);
+    // Shadow mapping ------------------------------------------------
+    const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
+    unsigned int depthMapFBO;
+    glGenFramebuffers(1, &depthMapFBO);
 
-    unsigned int textureColorbufferA;
-    glGenTextures(1, &textureColorbufferA);
-    glBindTexture(GL_TEXTURE_2D, textureColorbufferA);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WINDOW_WIDTH, WINDOW_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColorbufferA, 0);
-
-    unsigned int rboA;
-    glGenRenderbuffers(1, &rboA);
-    glBindRenderbuffer(GL_RENDERBUFFER, rboA);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, WINDOW_WIDTH, WINDOW_HEIGHT);
-    glBindRenderbuffer(GL_RENDERBUFFER, 0);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rboA);
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-        std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
-    // Set up Post Processing Quad B
-    unsigned int framebufferB;
-    glGenFramebuffers(1, &framebufferB);
-    glBindFramebuffer(GL_FRAMEBUFFER, framebufferB);
-
-    unsigned int textureColorbufferB;
-    glGenTextures(1, &textureColorbufferB);
-    glBindTexture(GL_TEXTURE_2D, textureColorbufferB);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WINDOW_WIDTH, WINDOW_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColorbufferB, 0);
-
-    unsigned int rboB;
-    glGenRenderbuffers(1, &rboB);
-    glBindRenderbuffer(GL_RENDERBUFFER, rboB);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, WINDOW_WIDTH, WINDOW_HEIGHT);
-    glBindRenderbuffer(GL_RENDERBUFFER, 0);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rboB);
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-        std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
+    unsigned int depthMap;
+    glGenTextures(1, &depthMap);
+    glBindTexture(GL_TEXTURE_2D, depthMap);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
+        SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
+    glDrawBuffer(GL_NONE);
+    glReadBuffer(GL_NONE);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    float quadVertices[] = {
-        // positions   texCoords
-        -1.0f,  1.0f,  0.0f, 1.0f,
-        -1.0f, -1.0f,  0.0f, 0.0f,
-         1.0f, -1.0f,  1.0f, 0.0f,
+    // --
+    // ---------------------------------------------------
 
-        -1.0f,  1.0f,  0.0f, 1.0f,
-         1.0f, -1.0f,  1.0f, 0.0f,
-         1.0f,  1.0f,  1.0f, 1.0f
-    };
-    unsigned int quadVAO, quadVBO;
-    glGenVertexArrays(1, &quadVAO);
-    glGenBuffers(1, &quadVBO);
-    glBindVertexArray(quadVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
-    Shader edgeDetection("simple.vert", "Postprocessing/postprocessing_edgeDetection.frag");
-    edgeDetection.use();
-    edgeDetection.setInt("screenTexture", 0);
+    Camera cam = Camera(&scene_mat, "Camera");
+    
+    // Shadow Mapping
+    Shader debugDepthQuad("simple.vert", "ShadowMapping/depth_debug_shader.frag");
+    Shader simpleDepthShader("ShadowMapping/depth_shader.vert", "empty.frag");
+    debugDepthQuad.use();
+    debugDepthQuad.setInt("depthMap", 0);
 
-    Shader inversion("simple.vert", "Postprocessing/postprocessing_basic.frag");
-    inversion.use();
-    inversion.setInt("screenTexture", 0);
+    float near_plane = 1.0f, far_plane = 7.5f;
+    glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
+    glm::mat4 lightView = glm::lookAt(glm::vec3(-2.0f, 4.0f, -1.0f),
+        glm::vec3(0.0f, 0.0f, 0.0f),
+        glm::vec3(0.0f, 1.0f, 0.0f));
+    glm::mat4 lightSpaceMatrix = lightProjection * lightView;
+    simpleDepthShader.use();
+    simpleDepthShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
+
+    // Post processing shaders
+    Postprocessing postprocessing(WINDOW_WIDTH, WINDOW_HEIGHT);
+
+    Shader sdf("simple.vert", "Postprocessing/postprocessing_simpleSDF.frag");
+    sdf.use();
+    sdf.setInt("screenTexture", 0);
+    sdf.setFloat("aspectRatio", ASPECT_RATIO);
 
     // Depth Testing
     glEnable(GL_DEPTH_TEST);
@@ -174,10 +153,12 @@ main(int, char* argv[]) {
     // Anti-Aliasing
     glEnable(GL_POLYGON_SMOOTH);
     glEnable(GL_MULTISAMPLE);
-    glfwWindowHint(GLFW_SAMPLES, 4);
 
     glfwSetKeyCallback(window, key_callback);
     glfwMaximizeWindow(window);
+
+    // Lighting
+    glm::vec3 lightPos(0.0f, 5.0f, 5.0f);
 
     std::chrono::time_point<std::chrono::system_clock> start, end;
     // rendering loop
@@ -187,39 +168,52 @@ main(int, char* argv[]) {
 
         glfwPollEvents();
 
-        // First pass --> render to framebuffer
+        cam.update(i_FRAME);
+        // First pass --> render to shadow
         // ----------------------------------------------------------------------
-        glBindFramebuffer(GL_FRAMEBUFFER, framebufferA);
+        glm::mat4 lightProjection, lightView;
+        glm::mat4 lightSpaceMatrix;
+        float near_plane = 1.0f, far_plane = 7.5f;
+        lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
+        lightView = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
+        lightSpaceMatrix = lightProjection * lightView;
+        // render scene from light's point of view
+        simpleDepthShader.use();
+        simpleDepthShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
+
+        glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+        glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+        glClear(GL_DEPTH_BUFFER_BIT);
+        render_depth(objects, &simpleDepthShader, i_FRAME);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+        // reset viewport
+        glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        // render Depth map to quad for visual debugging
+        // ---------------------------------------------
+        debugDepthQuad.use();
+        debugDepthQuad.setFloat("near_plane", near_plane);
+        debugDepthQuad.setFloat("far_plane", far_plane);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, depthMap);
+        postprocessing.renderQuad();
+
+        /*
+        // Second pass
+        glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glBindTexture(GL_TEXTURE_2D, depthMap);
         glEnable(GL_DEPTH_TEST);
-        cam.update(i_FRAME);
-        // Render and Update Objects
-        for (unsigned i = 0; i < objects.size(); ++i) {
-            objects[i]->update(i_FRAME);
-            objects[i]->render(cam.viewMatrix(), proj_matrix);
-        }
-        // Second pass -> render framebuffer A to framebuffer b
-        // ----------------------------------------------------------------------
-        glBindFramebuffer(GL_FRAMEBUFFER, framebufferB);
-        glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
-        edgeDetection.use();
-        glBindVertexArray(quadVAO);
-        glDisable(GL_DEPTH_TEST);
-        glBindTexture(GL_TEXTURE_2D, textureColorbufferA);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
-        // Third pass -> render framebuffer B to actual screen buffer
-        // ----------------------------------------------------------------------
-        glBindFramebuffer(GL_FRAMEBUFFER, 0); // reset to actual screen buffer
-        glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
-        inversion.use();
-        glBindVertexArray(quadVAO);
-        glDisable(GL_DEPTH_TEST);
-        glBindTexture(GL_TEXTURE_2D, textureColorbufferB);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
+        render_scene(objects, &cam, i_FRAME);
+        */
 
+        // Third pass -> render framebuffer A to screen buffer
+        // ----------------------------------------------------------------------
+        // postprocessing.postprocess(&sdf, RenderDirection::A_TO_SCR);
 
         if (enableGUI) handleGUI(objects);
 
@@ -246,13 +240,28 @@ main(int, char* argv[]) {
         objects[i]->destroy();
     }
 
-    glDeleteFramebuffers(1, &framebufferA);
-    glDeleteFramebuffers(1, &framebufferB);
-    glDeleteRenderbuffers(1, &rboA);
-    glDeleteRenderbuffers(1, &rboB);
+    postprocessing.destroy();
 
     cleanup_imgui();
     glfwTerminate();
+}
+
+void render_depth(std::vector<Object*> objects, Shader* shader,  unsigned int frame)
+{
+    for (unsigned i = 0; i < objects.size(); ++i) {
+        objects[i]->update(frame);
+        shader->setMat4("model", objects[i]->model_matrix);
+        objects[i]->render(shader);
+    }
+}
+
+void render_scene(std::vector<Object*> objects, Camera* cam, unsigned int frame)
+{
+    // Render and Update Objects
+    for (unsigned i = 0; i < objects.size(); ++i) {
+        objects[i]->update(frame);
+        objects[i]->render(cam->viewMatrix(), proj_matrix);
+    }
 }
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
