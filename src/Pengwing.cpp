@@ -56,16 +56,16 @@ main(int, char* argv[]) {
     //camera_orbital cam(window);
     proj_matrix = glm::perspective(FOV, 1.f, NEAR_VALUE, FAR_VALUE);
 
-
     // Loading Objects ----------------------------------
     // --
     glm::mat4 scene_mat = glm::identity<glm::mat4>();
+
+    std::vector<Object*> objects = std::vector<Object*>();
 
     Shader albedo_texture = Shader("basic_textured.vert", "basic_textured.frag");
     Shader shader = Shader("basic_colors.vert", "basic_colors.frag");
     Shader sunglasses_shader = Shader("basic_colors.vert", "basic_colors_black.frag");
 
-    std::vector<Object*> objects = std::vector<Object*>();
     {
         objects.push_back(new Drache(shader, Model("dragon.obj", true), &scene_mat, "Drache"));
         objects[0]->active = false;
@@ -85,33 +85,143 @@ main(int, char* argv[]) {
     objects[3]->position = glm::vec3(0.0f, 0.0f, 0.0f);
     objects[3]->active = true;
 
+
     Camera cam = Camera(&scene_mat, "Camera");
     // --
     // ---------------------------------------------------
+    
+    // Set up Post Processing Quad A
+    unsigned int framebufferA;
+    glGenFramebuffers(1, &framebufferA);
+    glBindFramebuffer(GL_FRAMEBUFFER, framebufferA);
 
+    unsigned int textureColorbufferA;
+    glGenTextures(1, &textureColorbufferA);
+    glBindTexture(GL_TEXTURE_2D, textureColorbufferA);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WINDOW_WIDTH, WINDOW_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColorbufferA, 0);
+
+    unsigned int rboA;
+    glGenRenderbuffers(1, &rboA);
+    glBindRenderbuffer(GL_RENDERBUFFER, rboA);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, WINDOW_WIDTH, WINDOW_HEIGHT);
+    glBindRenderbuffer(GL_RENDERBUFFER, 0);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rboA);
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
+    // Set up Post Processing Quad B
+    unsigned int framebufferB;
+    glGenFramebuffers(1, &framebufferB);
+    glBindFramebuffer(GL_FRAMEBUFFER, framebufferB);
+
+    unsigned int textureColorbufferB;
+    glGenTextures(1, &textureColorbufferB);
+    glBindTexture(GL_TEXTURE_2D, textureColorbufferB);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WINDOW_WIDTH, WINDOW_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColorbufferB, 0);
+
+    unsigned int rboB;
+    glGenRenderbuffers(1, &rboB);
+    glBindRenderbuffer(GL_RENDERBUFFER, rboB);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, WINDOW_WIDTH, WINDOW_HEIGHT);
+    glBindRenderbuffer(GL_RENDERBUFFER, 0);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rboB);
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    float quadVertices[] = {
+        // positions   texCoords
+        -1.0f,  1.0f,  0.0f, 1.0f,
+        -1.0f, -1.0f,  0.0f, 0.0f,
+         1.0f, -1.0f,  1.0f, 0.0f,
+
+        -1.0f,  1.0f,  0.0f, 1.0f,
+         1.0f, -1.0f,  1.0f, 0.0f,
+         1.0f,  1.0f,  1.0f, 1.0f
+    };
+    unsigned int quadVAO, quadVBO;
+    glGenVertexArrays(1, &quadVAO);
+    glGenBuffers(1, &quadVBO);
+    glBindVertexArray(quadVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+    Shader edgeDetection("simple.vert", "Postprocessing/postprocessing_edgeDetection.frag");
+    edgeDetection.use();
+    edgeDetection.setInt("screenTexture", 0);
+
+    Shader inversion("simple.vert", "Postprocessing/postprocessing_basic.frag");
+    inversion.use();
+    inversion.setInt("screenTexture", 0);
+
+    // Depth Testing
     glEnable(GL_DEPTH_TEST);
+
+    // Blending
+    glEnable(GL_BLEND);
+
+    // Anti-Aliasing
+    glEnable(GL_POLYGON_SMOOTH);
+    glEnable(GL_MULTISAMPLE);
+    glfwWindowHint(GLFW_SAMPLES, 4);
 
     glfwSetKeyCallback(window, key_callback);
     glfwMaximizeWindow(window);
+
+    std::chrono::time_point<std::chrono::system_clock> start, end;
     // rendering loop
     while (glfwWindowShouldClose(window) == false) {
         // FPS limiting
-        std::chrono::time_point<std::chrono::system_clock> start, end;
         start = std::chrono::system_clock::now();
 
         glfwPollEvents();
-        glClearColor(0.25f, 0.25f, 0.25f, 1.0f);
+
+        // First pass --> render to framebuffer
+        // ----------------------------------------------------------------------
+        glBindFramebuffer(GL_FRAMEBUFFER, framebufferA);
+        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        if (enableGUI) handleGUI(objects);
-
+        glEnable(GL_DEPTH_TEST);
         cam.update(i_FRAME);
-
         // Render and Update Objects
         for (unsigned i = 0; i < objects.size(); ++i) {
             objects[i]->update(i_FRAME);
             objects[i]->render(cam.viewMatrix(), proj_matrix);
         }
+        // Second pass -> render framebuffer A to framebuffer b
+        // ----------------------------------------------------------------------
+        glBindFramebuffer(GL_FRAMEBUFFER, framebufferB);
+        glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+        edgeDetection.use();
+        glBindVertexArray(quadVAO);
+        glDisable(GL_DEPTH_TEST);
+        glBindTexture(GL_TEXTURE_2D, textureColorbufferA);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        // Third pass -> render framebuffer B to actual screen buffer
+        // ----------------------------------------------------------------------
+        glBindFramebuffer(GL_FRAMEBUFFER, 0); // reset to actual screen buffer
+        glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+        inversion.use();
+        glBindVertexArray(quadVAO);
+        glDisable(GL_DEPTH_TEST);
+        glBindTexture(GL_TEXTURE_2D, textureColorbufferB);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+
+
+        if (enableGUI) handleGUI(objects);
 
         // Advance Timeline
         if (play)
@@ -135,7 +245,12 @@ main(int, char* argv[]) {
     for (unsigned int i = 0; i < objects.size(); ++i) {
         objects[i]->destroy();
     }
-    
+
+    glDeleteFramebuffers(1, &framebufferA);
+    glDeleteFramebuffers(1, &framebufferB);
+    glDeleteRenderbuffers(1, &rboA);
+    glDeleteRenderbuffers(1, &rboB);
+
     cleanup_imgui();
     glfwTerminate();
 }
@@ -158,7 +273,6 @@ void handleGUI(std::vector<Object*> objects) {
     {
         play = !play;
     }
-    //ImGui::SliderInt(std::to_string(i_FRAME / FPS).append("s Frame").c_str(), &i_FRAME, 0, duration * FPS);
     ImGui::SliderInt("Frame", &i_FRAME, 0, duration * FPS);
     ImGui::SliderInt("Loop Start", &loop_start, 0, duration * FPS);
     ImGui::SliderInt("Loop End", &loop_end, 0, duration * FPS);
