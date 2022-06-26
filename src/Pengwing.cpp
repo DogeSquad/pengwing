@@ -17,28 +17,30 @@ const int WINDOW_HEIGHT      = 1080;
 constexpr float ASPECT_RATIO = static_cast<float>(WINDOW_WIDTH) / static_cast<float>(WINDOW_HEIGHT);
 
 // Camera Settings
-const float FOV = 45.f;
+const float FOV        = 45.f;
 const float NEAR_VALUE = 0.1f;
-const float FAR_VALUE = 100.f;
+const float FAR_VALUE  = 100.f;
+bool useOrbital = false;
 
 // GUI Settings
 bool enableGUI = true;
 const int timeline_height = 200;
 
 // Timeline Settings
-const int FPS = 60;
+const int FPS        = 60;
 const float duration = 30;
-int i_FRAME = 0;
-int loop_start = 0;
-int loop_end = int(FPS * duration);
-bool play = true;
+int i_FRAME          = 0;
+int loop_start       = 0;
+int loop_end         = int(FPS * duration);
+bool play            = true;
 
 // Forward Declaration
 void handleGUI(std::vector<Object*> objects);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void render_scene(std::vector<Object*> objects, Camera* cam, unsigned int frame);
-void render_depth(std::vector<Object*> objects, Shader* shader, unsigned int frame);
-
+void render_scene(std::vector<Object*> objects, camera_orbital* orbitalCam, unsigned int frame);
+void render_scene_with_shader(std::vector<Object*> objects, Shader* shader, unsigned int frame);
+void renderQuad();
 #ifndef M_PI
 #define M_PI 3.14159265359
 #endif
@@ -71,34 +73,47 @@ main(int, char* argv[]) {
     glm::mat4 scene_mat = glm::identity<glm::mat4>();
 
     std::vector<Object*> objects = std::vector<Object*>();
+    Shader shadow_shader("ShadowMapping/shadow_mapping.vert", "ShadowMapping/shadow_mapping.frag");
+    objects.push_back(new Drache(shadow_shader, Model("backpack/backpack.obj", true), &scene_mat, "Backpack"));
+    objects[0]->position = glm::vec3(0.0f, 0.0f, 0.0f);
+    objects[0]->active = true;
 
+    Shader shadow_shader_unicol("ShadowMapping/shadow_mapping.vert", "ShadowMapping/shadow_mapping_unicol.frag");
+    objects.push_back(new Object(shadow_shader_unicol, Model("plane.obj", false), &scene_mat, "Plane"));
+    objects[1]->scale = glm::vec3(100.0f, 1.0f, 100.0f);
+    objects[1]->position = glm::vec3(0.0f, 0.0f, 0.0f);
+    objects[1]->active = true;
+    objects.push_back(new Drache(shadow_shader_unicol, Model("dragon.obj", true), &scene_mat, "Drache"));
+    objects[2]->active = false;
+    /*
     Shader albedo_texture = Shader("basic_textured.vert", "basic_textured.frag");
     Shader shader = Shader("basic_colors.vert", "basic_colors.frag");
     Shader sunglasses_shader = Shader("basic_colors.vert", "basic_colors_black.frag");
 
     {
         objects.push_back(new Drache(shader, Model("dragon.obj", true), &scene_mat, "Drache"));
-        objects[0]->active = true;
+        objects[0]->active = false;
         objects.push_back(new Object(sunglasses_shader, Model("sunglasses/sunglasses.obj", true), &objects[0]->model_matrix, "Sunglasses"));
         objects[1]->position = glm::vec3(-4.9f, 8.1f, -0.1f);
         objects[1]->rotation = glm::vec4(0.0f, 1.0f, 0.0f, glm::half_pi<float>() + 0.4f);
         objects[1]->scale = glm::vec3(19.0f, 19.0f, 19.0f);
-        objects[1]->active = true;
+        objects[1]->active = false;
     }
 
     objects.push_back(new Object(shader, Model("plane.obj", false), &scene_mat, "Plane"));
     objects[2]->scale = glm::vec3(10.0f, 1.0f, 10.0f);
     objects[2]->position = glm::vec3(0.0f, 0.0f, 0.0f);
-    objects[2]->active = true;
+    objects[2]->active = false;
 
     objects.push_back(new Drache(albedo_texture, Model("backpack/backpack.obj", true), &scene_mat, "Backpack"));
     objects[3]->position = glm::vec3(0.0f, 0.0f, 0.0f);
-    objects[3]->active = false;
+    objects[3]->active = true;
+    */
     // --
     // ---------------------------------------------------
     
     // Shadow mapping ------------------------------------------------
-    const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
+    const unsigned int SHADOW_WIDTH = 2048, SHADOW_HEIGHT = 2048;
     unsigned int depthMapFBO;
     glGenFramebuffers(1, &depthMapFBO);
 
@@ -109,8 +124,11 @@ main(int, char* argv[]) {
         SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+    
     glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
     glDrawBuffer(GL_NONE);
@@ -120,21 +138,13 @@ main(int, char* argv[]) {
     // ---------------------------------------------------
 
     Camera cam = Camera(&scene_mat, "Camera");
+    camera_orbital orbitalCam(window);
     
     // Shadow Mapping
     Shader debugDepthQuad("simple.vert", "ShadowMapping/depth_debug_shader.frag");
     Shader simpleDepthShader("ShadowMapping/depth_shader.vert", "empty.frag");
     debugDepthQuad.use();
     debugDepthQuad.setInt("depthMap", 0);
-
-    float near_plane = 1.0f, far_plane = 7.5f;
-    glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
-    glm::mat4 lightView = glm::lookAt(glm::vec3(-2.0f, 4.0f, -1.0f),
-        glm::vec3(0.0f, 0.0f, 0.0f),
-        glm::vec3(0.0f, 1.0f, 0.0f));
-    glm::mat4 lightSpaceMatrix = lightProjection * lightView;
-    simpleDepthShader.use();
-    simpleDepthShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
 
     // Post processing shaders
     Postprocessing postprocessing(WINDOW_WIDTH, WINDOW_HEIGHT);
@@ -158,7 +168,13 @@ main(int, char* argv[]) {
     glfwMaximizeWindow(window);
 
     // Lighting
-    glm::vec3 lightPos(0.0f, 5.0f, 5.0f);
+    glm::vec3 lightPos(1.0f, 1.0f, 1.0f);
+    glm::mat4 lightProjection, lightView;
+    glm::mat4 lightSpaceMatrix;
+    float near_plane = -10.0f, far_plane = 10.0f;
+    lightProjection = glm::ortho<float>(-20, 20, -20, 20, near_plane, far_plane);
+    lightView = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
+    lightSpaceMatrix = lightProjection * lightView;
 
     std::chrono::time_point<std::chrono::system_clock> start, end;
     // rendering loop
@@ -168,52 +184,59 @@ main(int, char* argv[]) {
 
         glfwPollEvents();
 
-        cam.update(i_FRAME);
+        if (!useOrbital) cam.update(i_FRAME);
         // First pass --> render to shadow
         // ----------------------------------------------------------------------
-        glm::mat4 lightProjection, lightView;
-        glm::mat4 lightSpaceMatrix;
-        float near_plane = 1.0f, far_plane = 7.5f;
-        lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
-        lightView = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
-        lightSpaceMatrix = lightProjection * lightView;
-        // render scene from light's point of view
         simpleDepthShader.use();
         simpleDepthShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
-
         glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
         glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+        glCullFace(GL_FRONT);
         glClear(GL_DEPTH_BUFFER_BIT);
-        render_depth(objects, &simpleDepthShader, i_FRAME);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        // render scene from light's point of view
+        render_scene_with_shader(objects, &simpleDepthShader, i_FRAME);
+        glCullFace(GL_BACK);
 
         // reset viewport
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        
+        // Second pass
+        shadow_shader.use();
+        // set light uniforms
+        shadow_shader.setVec3("viewPos", cam.position);
+        shadow_shader.setVec3("lightPos", lightPos);
+        shadow_shader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
+        shadow_shader.setInt("shadowMap", 3);
+        shadow_shader_unicol.use();
+        // set light uniforms
+        shadow_shader_unicol.setVec3("viewPos", cam.position);
+        shadow_shader_unicol.setVec3("lightPos", lightPos);
+        shadow_shader_unicol.setMat4("lightSpaceMatrix", lightSpaceMatrix);
+        shadow_shader_unicol.setInt("shadowMap", 3);
+
+        glActiveTexture(GL_TEXTURE3);
+        glBindTexture(GL_TEXTURE_2D, depthMap);
+        glEnable(GL_DEPTH_TEST);
+        //render_scene_with_shader(objects, &simpleDepthShader, i_FRAME);
+        if (!useOrbital) render_scene(objects, &cam, i_FRAME);
+        else render_scene(objects, &orbitalCam, i_FRAME);
 
         // render Depth map to quad for visual debugging
         // ---------------------------------------------
-        debugDepthQuad.use();
-        debugDepthQuad.setFloat("near_plane", near_plane);
-        debugDepthQuad.setFloat("far_plane", far_plane);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, depthMap);
-        postprocessing.renderQuad();
+        
+        //debugDepthQuad.use();
+        //glActiveTexture(GL_TEXTURE0);
+        //glBindTexture(GL_TEXTURE_2D, depthMap);
+        //renderQuad();
+        
 
-        /*
-        // Second pass
-        glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glBindTexture(GL_TEXTURE_2D, depthMap);
-        glEnable(GL_DEPTH_TEST);
-        render_scene(objects, &cam, i_FRAME);
-        */
 
         // Third pass -> render framebuffer A to screen buffer
         // ----------------------------------------------------------------------
-        // postprocessing.postprocess(&sdf, RenderDirection::A_TO_SCR);
+        //postprocessing.postprocess(&empty, RenderDirection::A_TO_SCR);
 
         if (enableGUI) handleGUI(objects);
 
@@ -246,10 +269,40 @@ main(int, char* argv[]) {
     glfwTerminate();
 }
 
-void render_depth(std::vector<Object*> objects, Shader* shader,  unsigned int frame)
+unsigned int quadVAO = 0;
+unsigned int quadVBO;
+void renderQuad()
+{
+    if (quadVAO == 0)
+    {
+        float quadVertices[] = {
+            // positions        // texture Coords
+            -1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
+            -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+             1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
+             1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+        };
+        // setup plane VAO
+        glGenVertexArrays(1, &quadVAO);
+        glGenBuffers(1, &quadVBO);
+        glBindVertexArray(quadVAO);
+        glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    }
+    glBindVertexArray(quadVAO);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    glBindVertexArray(0);
+}
+
+void render_scene_with_shader(std::vector<Object*> objects, Shader* shader,  unsigned int frame)
 {
     for (unsigned i = 0; i < objects.size(); ++i) {
         objects[i]->update(frame);
+        shader->use();
         shader->setMat4("model", objects[i]->model_matrix);
         objects[i]->render(shader);
     }
@@ -263,6 +316,14 @@ void render_scene(std::vector<Object*> objects, Camera* cam, unsigned int frame)
         objects[i]->render(cam->viewMatrix(), proj_matrix);
     }
 }
+void render_scene(std::vector<Object*> objects, camera_orbital* orbitalCam, unsigned int frame)
+{
+    // Render and Update Objects
+    for (unsigned i = 0; i < objects.size(); ++i) {
+        objects[i]->update(frame);
+        objects[i]->render(orbitalCam->view_matrix(), proj_matrix);
+    }
+}
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
@@ -270,6 +331,8 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         enableGUI = !enableGUI;
     if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
         play = !play;
+    if (key == GLFW_KEY_O && action == GLFW_PRESS)
+        useOrbital = !useOrbital;
 }
 
 void handleGUI(std::vector<Object*> objects) {

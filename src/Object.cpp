@@ -27,6 +27,7 @@ void Object::destroy()
 }
 void Object::render(Shader* shader)
 {
+    if (!this->active) return;
     this->model.Draw(*shader);
 }
 void Object::render(SceneData &scene_data) 

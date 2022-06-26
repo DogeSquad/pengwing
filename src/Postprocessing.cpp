@@ -32,7 +32,7 @@ void Postprocessing::postprocess(Shader *screenShader, RenderDirection rd)
     }
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
-    glBindVertexArray(quadVAO);
+    glBindVertexArray(this->quadVAO);
     glDisable(GL_DEPTH_TEST);
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }
@@ -40,16 +40,7 @@ void Postprocessing::postprocess(Shader *screenShader, RenderDirection rd)
 void Postprocessing::renderQuad()
 {
     glBindVertexArray(this->quadVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, this->quadVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(this->quadVertices), &this->quadVertices, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-    
-    glBindVertexArray(this->quadVAO);
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-    glBindVertexArray(0);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
 Postprocessing::Postprocessing(unsigned int WINDOW_WIDTH, unsigned int WINDOW_HEIGHT)
