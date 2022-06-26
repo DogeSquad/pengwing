@@ -20,10 +20,10 @@ constexpr float ASPECT_RATIO = static_cast<float>(WINDOW_WIDTH) / static_cast<fl
 const float FOV        = 45.f;
 const float NEAR_VALUE = 0.1f;
 const float FAR_VALUE  = 100.f;
-bool useOrbital = false;
+bool useOrbital        = true;
 
 // GUI Settings
-bool enableGUI = true;
+bool enableGUI            = true;
 const int timeline_height = 200;
 
 // Timeline Settings
@@ -85,6 +85,12 @@ main(int, char* argv[]) {
     objects[1]->active = true;
     objects.push_back(new Drache(shadow_shader_unicol, Model("dragon.obj", true), &scene_mat, "Drache"));
     objects[2]->active = false;
+    
+    Shader boxPP("basic_colors.vert", "Postprocessing/postprocessing_clouds.frag");
+    Object clouds_container = Object(boxPP, Model("cube.obj", true), &scene_mat, "Cube");
+    clouds_container.position = glm::vec3(0.0f, 20.0f, 0.0f);
+    clouds_container.scale = glm::vec3(10.0f, 5.0f, 10.0f);
+
     /*
     Shader albedo_texture = Shader("basic_textured.vert", "basic_textured.frag");
     Shader shader = Shader("basic_colors.vert", "basic_colors.frag");
@@ -113,7 +119,7 @@ main(int, char* argv[]) {
     // ---------------------------------------------------
     
     // Shadow mapping ------------------------------------------------
-    const unsigned int SHADOW_WIDTH = 2048, SHADOW_HEIGHT = 2048;
+    const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
     unsigned int depthMapFBO;
     glGenFramebuffers(1, &depthMapFBO);
 
@@ -149,19 +155,25 @@ main(int, char* argv[]) {
     // Post processing shaders
     Postprocessing postprocessing(WINDOW_WIDTH, WINDOW_HEIGHT);
 
-    Shader sdf("simple.vert", "Postprocessing/postprocessing_simpleSDF.frag");
-    sdf.use();
-    sdf.setInt("screenTexture", 0);
-    sdf.setFloat("aspectRatio", ASPECT_RATIO);
+    Shader defaultPP("simple.vert", "Postprocessing/postprocessing_basic.frag");
+    defaultPP.use();
+    defaultPP.setInt("screenTexture", 0);
+    defaultPP.setFloat("aspectRatio", ASPECT_RATIO);
+
+    Shader clouds("basic_colors.vert", "Postprocessing/postprocessing_clouds.frag");
+    clouds.use();
+    clouds.setInt("screenTexture", 3);
+    clouds.setFloat("aspectRatio", ASPECT_RATIO);
 
     // Depth Testing
     glEnable(GL_DEPTH_TEST);
 
     // Blending
-    glEnable(GL_BLEND);
+    // glEnable(GL_BLEND);
+    // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // Anti-Aliasing
-    glEnable(GL_POLYGON_SMOOTH);
+    //glEnable(GL_POLYGON_SMOOTH);
     glEnable(GL_MULTISAMPLE);
 
     glfwSetKeyCallback(window, key_callback);
@@ -194,24 +206,28 @@ main(int, char* argv[]) {
         glCullFace(GL_FRONT);
         glClear(GL_DEPTH_BUFFER_BIT);
         // render scene from light's point of view
+        clouds.use();
+        clouds.setVec3("lightPos", lightPos);
+        if (!useOrbital) clouds.setVec3("view_pos", cam.position);
+        else clouds.setVec3("view_pos", orbitalCam.position());
         render_scene_with_shader(objects, &simpleDepthShader, i_FRAME);
         glCullFace(GL_BACK);
 
         // reset viewport
-
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glBindFramebuffer(GL_FRAMEBUFFER, postprocessing.framebufferA);
+        //glBindFramebuffer(GL_FRAMEBUFFER, postprocessing.framebufferA);
         glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        
+
         // Second pass
-        shadow_shader.use();
         // set light uniforms
+        shadow_shader.use();
         shadow_shader.setVec3("viewPos", cam.position);
         shadow_shader.setVec3("lightPos", lightPos);
         shadow_shader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
         shadow_shader.setInt("shadowMap", 3);
-        shadow_shader_unicol.use();
         // set light uniforms
+        shadow_shader_unicol.use();
         shadow_shader_unicol.setVec3("viewPos", cam.position);
         shadow_shader_unicol.setVec3("lightPos", lightPos);
         shadow_shader_unicol.setMat4("lightSpaceMatrix", lightSpaceMatrix);
@@ -231,12 +247,18 @@ main(int, char* argv[]) {
         //glActiveTexture(GL_TEXTURE0);
         //glBindTexture(GL_TEXTURE_2D, depthMap);
         //renderQuad();
-        
 
 
         // Third pass -> render framebuffer A to screen buffer
         // ----------------------------------------------------------------------
-        //postprocessing.postprocess(&empty, RenderDirection::A_TO_SCR);
+
+        clouds_container.update(i_FRAME);
+        clouds.use();
+        clouds.setVec3("lightPos", lightPos);
+        clouds.setVec3("view_pos", !useOrbital ? cam.position : orbitalCam.position());
+        clouds_container.render(!useOrbital ? cam.viewMatrix() : orbitalCam.view_matrix(), proj_matrix);
+        
+        postprocessing.postprocess(&defaultPP, RenderDirection::A_TO_SCR);
 
         if (enableGUI) handleGUI(objects);
 

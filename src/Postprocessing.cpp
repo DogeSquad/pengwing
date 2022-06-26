@@ -30,7 +30,7 @@ void Postprocessing::postprocess(Shader *screenShader, RenderDirection rd)
             break;
         }
     }
-    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+    glClearColor(0.75f, 0.76f, 0.79f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
     glBindVertexArray(this->quadVAO);
     glDisable(GL_DEPTH_TEST);
