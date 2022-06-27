@@ -87,7 +87,7 @@ main(int, char* argv[]) {
     objects[2]->active = false;
     
     Shader boxPP("basic_colors.vert", "clouds.frag");
-    Object clouds_container = Object(boxPP, Model("cube.obj", true), &scene_mat, "Cube");
+    Object clouds_container = Object(boxPP, Model("cube.obj", false), &scene_mat, "Cube");
     clouds_container.position = glm::vec3(0.0f, 10.0f, 0.0f);
     clouds_container.scale = glm::vec3(10.0f, 5.0f, 10.0f);
 
@@ -159,7 +159,9 @@ main(int, char* argv[]) {
     // ---------------------------------------------------------------
 
     // Clouds ---------------------------------------------------------
-    Shader clouds("basic_colors.vert", "Postprocessing/postprocessing_clouds.frag");
+    Shader clouds("basic_colors.vert", "clouds.frag");
+    glm::vec3 cloud_blounds_A;
+    glm::vec3 cloud_bounds_B;
     // ----------------------------------------------------------------
 
 
@@ -181,7 +183,7 @@ main(int, char* argv[]) {
     // ----------------------------------------------------------------
 
     // Anti-Aliasing --------------------------------------------------
-    //glEnable(GL_POLYGON_SMOOTH);
+    glEnable(GL_POLYGON_SMOOTH);
     glEnable(GL_MULTISAMPLE);
     // ----------------------------------------------------------------
 
@@ -193,7 +195,7 @@ main(int, char* argv[]) {
     glm::mat4 lightSpaceMatrix;
     float near_plane = -10.0f, far_plane = 10.0f;
     lightProjection = glm::ortho<float>(-20, 20, -20, 20, near_plane, far_plane);
-    lightView = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
+    lightView = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     lightSpaceMatrix = lightProjection * lightView;
     // ----------------------------------------------------------------
 
@@ -229,15 +231,15 @@ main(int, char* argv[]) {
         shadow_shader.setVec3("viewPos", !useOrbital ? cam.position : orbitalCam.position());
         shadow_shader.setVec3("lightPos", lightPos);
         shadow_shader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
-        shadow_shader.setInt("shadowMap", 0);
+        shadow_shader.setInt("shadowMap", 1);
         // set light uniforms
         shadow_shader_unicol.use();
         shadow_shader_unicol.setVec3("viewPos", !useOrbital ? cam.position : orbitalCam.position());
         shadow_shader_unicol.setVec3("lightPos", lightPos);
         shadow_shader_unicol.setMat4("lightSpaceMatrix", lightSpaceMatrix);
-        shadow_shader_unicol.setInt("shadowMap", 0);
+        shadow_shader_unicol.setInt("shadowMap", 1);
 
-        glActiveTexture(GL_TEXTURE0);
+        glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, depthMap);
         glEnable(GL_DEPTH_TEST);
         //render_scene_with_shader(objects, &simpleDepthShader, i_FRAME);

@@ -1,5 +1,7 @@
 #version 330 core
 
+uniform sampler2D shadowMap;
+
 struct Material {
     sampler2D texture_diffuse1;
     sampler2D texture_diffuse2;
@@ -19,7 +21,6 @@ in VS_OUT {
 uniform vec3 lightPos; 
 uniform vec3 viewPos;
 uniform Material material;
-uniform sampler2D shadowMap;
 
 float ShadowCalculation(vec4 fragPosLightSpace, float dotNL)
 {
