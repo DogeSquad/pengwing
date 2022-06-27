@@ -27,7 +27,7 @@ float ShadowCalculation(vec4 fragPosLightSpace, float dotNL)
     //    shadow = 0.0f;
     //
     //return shadow;
-
+    
     float shadow = 0.0f;
     vec2 texelSize = 1.0f / textureSize(shadowMap, 0);
     for(int x = -1; x <= 1; ++x)

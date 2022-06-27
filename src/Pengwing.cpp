@@ -86,9 +86,9 @@ main(int, char* argv[]) {
     objects.push_back(new Drache(shadow_shader_unicol, Model("dragon.obj", true), &scene_mat, "Drache"));
     objects[2]->active = false;
     
-    Shader boxPP("basic_colors.vert", "Postprocessing/postprocessing_clouds.frag");
+    Shader boxPP("basic_colors.vert", "clouds.frag");
     Object clouds_container = Object(boxPP, Model("cube.obj", true), &scene_mat, "Cube");
-    clouds_container.position = glm::vec3(0.0f, 20.0f, 0.0f);
+    clouds_container.position = glm::vec3(0.0f, 10.0f, 0.0f);
     clouds_container.scale = glm::vec3(10.0f, 5.0f, 10.0f);
 
     /*
@@ -115,9 +115,10 @@ main(int, char* argv[]) {
     objects[3]->position = glm::vec3(0.0f, 0.0f, 0.0f);
     objects[3]->active = true;
     */
-    // --
     // ---------------------------------------------------
     
+
+
     // Shadow mapping ------------------------------------------------
     const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
     unsigned int depthMapFBO;
@@ -140,46 +141,53 @@ main(int, char* argv[]) {
     glDrawBuffer(GL_NONE);
     glReadBuffer(GL_NONE);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    // --
-    // ---------------------------------------------------
 
-    Camera cam = Camera(&scene_mat, "Camera");
-    camera_orbital orbitalCam(window);
-    
-    // Shadow Mapping
     Shader debugDepthQuad("simple.vert", "ShadowMapping/depth_debug_shader.frag");
     Shader simpleDepthShader("ShadowMapping/depth_shader.vert", "empty.frag");
     debugDepthQuad.use();
-    debugDepthQuad.setInt("depthMap", 0);
+    debugDepthQuad.setInt("depthMap", 1);
+    // ---------------------------------------------------------------
 
-    // Post processing shaders
+
+
+    // Postprocessing ------------------------------------------------
     Postprocessing postprocessing(WINDOW_WIDTH, WINDOW_HEIGHT);
-
     Shader defaultPP("simple.vert", "Postprocessing/postprocessing_basic.frag");
     defaultPP.use();
     defaultPP.setInt("screenTexture", 0);
     defaultPP.setFloat("aspectRatio", ASPECT_RATIO);
+    // ---------------------------------------------------------------
 
+    // Clouds ---------------------------------------------------------
     Shader clouds("basic_colors.vert", "Postprocessing/postprocessing_clouds.frag");
-    clouds.use();
-    clouds.setInt("screenTexture", 3);
-    clouds.setFloat("aspectRatio", ASPECT_RATIO);
+    // ----------------------------------------------------------------
 
-    // Depth Testing
+
+
+    // Camera ---------------------------------------------------------
+    Camera cam(&scene_mat, "Camera");
+    camera_orbital orbitalCam(window);
+    // ----------------------------------------------------------------
+
+
+
+    // Depth Testing --------------------------------------------------
     glEnable(GL_DEPTH_TEST);
+    // ----------------------------------------------------------------
 
-    // Blending
-    // glEnable(GL_BLEND);
-    // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    // Blending -------------------------------------------------------
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    // ----------------------------------------------------------------
 
-    // Anti-Aliasing
+    // Anti-Aliasing --------------------------------------------------
     //glEnable(GL_POLYGON_SMOOTH);
     glEnable(GL_MULTISAMPLE);
+    // ----------------------------------------------------------------
 
-    glfwSetKeyCallback(window, key_callback);
-    glfwMaximizeWindow(window);
 
-    // Lighting
+
+    // Lighting -------------------------------------------------------
     glm::vec3 lightPos(1.0f, 1.0f, 1.0f);
     glm::mat4 lightProjection, lightView;
     glm::mat4 lightSpaceMatrix;
@@ -187,78 +195,74 @@ main(int, char* argv[]) {
     lightProjection = glm::ortho<float>(-20, 20, -20, 20, near_plane, far_plane);
     lightView = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
     lightSpaceMatrix = lightProjection * lightView;
+    // ----------------------------------------------------------------
 
+    glfwSetKeyCallback(window, key_callback);
+    glfwMaximizeWindow(window);
     std::chrono::time_point<std::chrono::system_clock> start, end;
     // rendering loop
     while (glfwWindowShouldClose(window) == false) {
-        // FPS limiting
         start = std::chrono::system_clock::now();
-
         glfwPollEvents();
 
-        if (!useOrbital) cam.update(i_FRAME);
-        // First pass --> render to shadow
-        // ----------------------------------------------------------------------
-        simpleDepthShader.use();
-        simpleDepthShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
+        // First pass --> render to shadow-----------------------------
         glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
         glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-        glCullFace(GL_FRONT);
+        glDisable(GL_CULL_FACE);
         glClear(GL_DEPTH_BUFFER_BIT);
-        // render scene from light's point of view
-        clouds.use();
-        clouds.setVec3("lightPos", lightPos);
-        if (!useOrbital) clouds.setVec3("view_pos", cam.position);
-        else clouds.setVec3("view_pos", orbitalCam.position());
+        if (!useOrbital) cam.update(i_FRAME);
+        simpleDepthShader.use();
+        simpleDepthShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
         render_scene_with_shader(objects, &simpleDepthShader, i_FRAME);
-        glCullFace(GL_BACK);
+        glEnable(GL_CULL_FACE);
+        // ------------------------------------------------------------
 
         // reset viewport
-        glBindFramebuffer(GL_FRAMEBUFFER, postprocessing.framebufferA);
-        //glBindFramebuffer(GL_FRAMEBUFFER, postprocessing.framebufferA);
         glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        //glBindFramebuffer(GL_FRAMEBUFFER, postprocessing.framebufferA);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // Second pass
         // set light uniforms
         shadow_shader.use();
-        shadow_shader.setVec3("viewPos", cam.position);
+        shadow_shader.setVec3("viewPos", !useOrbital ? cam.position : orbitalCam.position());
         shadow_shader.setVec3("lightPos", lightPos);
         shadow_shader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
-        shadow_shader.setInt("shadowMap", 3);
+        shadow_shader.setInt("shadowMap", 0);
         // set light uniforms
         shadow_shader_unicol.use();
-        shadow_shader_unicol.setVec3("viewPos", cam.position);
+        shadow_shader_unicol.setVec3("viewPos", !useOrbital ? cam.position : orbitalCam.position());
         shadow_shader_unicol.setVec3("lightPos", lightPos);
         shadow_shader_unicol.setMat4("lightSpaceMatrix", lightSpaceMatrix);
-        shadow_shader_unicol.setInt("shadowMap", 3);
+        shadow_shader_unicol.setInt("shadowMap", 0);
 
-        glActiveTexture(GL_TEXTURE3);
+        glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, depthMap);
         glEnable(GL_DEPTH_TEST);
         //render_scene_with_shader(objects, &simpleDepthShader, i_FRAME);
         if (!useOrbital) render_scene(objects, &cam, i_FRAME);
         else render_scene(objects, &orbitalCam, i_FRAME);
-
+        
         // render Depth map to quad for visual debugging
         // ---------------------------------------------
-        
-        //debugDepthQuad.use();
-        //glActiveTexture(GL_TEXTURE0);
-        //glBindTexture(GL_TEXTURE_2D, depthMap);
-        //renderQuad();
+        // debugDepthQuad.use();
+        // glActiveTexture(GL_TEXTURE0);
+        // glBindTexture(GL_TEXTURE_2D, depthMap);
+        // renderQuad();
 
 
         // Third pass -> render framebuffer A to screen buffer
         // ----------------------------------------------------------------------
-
+        glEnable(GL_CULL_FACE);
         clouds_container.update(i_FRAME);
         clouds.use();
         clouds.setVec3("lightPos", lightPos);
-        clouds.setVec3("view_pos", !useOrbital ? cam.position : orbitalCam.position());
+        clouds.setVec3("viewPos", !useOrbital ? cam.position : orbitalCam.position());
         clouds_container.render(!useOrbital ? cam.viewMatrix() : orbitalCam.view_matrix(), proj_matrix);
-        
-        postprocessing.postprocess(&defaultPP, RenderDirection::A_TO_SCR);
+
+        // Postprocess pass
+        // postprocessing.postprocess(&defaultPP, RenderDirection::A_TO_SCR);
 
         if (enableGUI) handleGUI(objects);
 
