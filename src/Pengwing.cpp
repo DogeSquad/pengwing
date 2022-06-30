@@ -18,9 +18,9 @@ const int WINDOW_HEIGHT      = 1080;
 constexpr float ASPECT_RATIO = static_cast<float>(WINDOW_WIDTH) / static_cast<float>(WINDOW_HEIGHT);
 
 // Camera Settings
-const float FOV        = 45.f;
+const float FOV        = 45.0f;
 const float NEAR_VALUE = 0.1f;
-const float FAR_VALUE  = 100.f;
+const float FAR_VALUE  = 100.0f;
 bool useOrbital        = true;
 
 // GUI Settings
@@ -67,7 +67,7 @@ main(int, char* argv[]) {
     if (enableGUI) init_imgui(window);
 
     //camera_orbital cam(window);
-    proj_matrix = glm::perspective(FOV, 1.f, NEAR_VALUE, FAR_VALUE);
+    proj_matrix = glm::perspective(FOV, 1.0f, NEAR_VALUE, FAR_VALUE);
 
     // Loading Objects ----------------------------------
     // --
@@ -83,7 +83,7 @@ main(int, char* argv[]) {
     objects.push_back(new Object(shadow_shader_unicol, Model("plane.obj", false), &scene_mat, "Plane"));
     objects[1]->scale = glm::vec3(50.0f, 1.0f, 50.0f);
     objects[1]->position = glm::vec3(0.0f, 0.0f, 0.0f);
-    objects[1]->active = true;
+    objects[1]->active = false;
     objects.push_back(new Drache(shadow_shader_unicol, Model("dragon.obj", true), &scene_mat, "Drache"));
     objects[2]->active = true;
 
@@ -113,10 +113,6 @@ main(int, char* argv[]) {
     */
     // ---------------------------------------------------
     
-    glm::uvec3 noiseSize(64, 64, 64);
-    Noise noise = Noise();
-    noise.generatePerlin(noiseSize);
-
     // Shadow mapping ------------------------------------------------
     const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
     unsigned int shadowDepthMapFBO;
@@ -124,6 +120,7 @@ main(int, char* argv[]) {
 
     unsigned int shadowDepthMap;
     glGenTextures(1, &shadowDepthMap);
+    glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, shadowDepthMap);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
         SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
@@ -153,13 +150,17 @@ main(int, char* argv[]) {
 
     unsigned int depthMap;
     glGenTextures(1, &depthMap);
+    glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, depthMap);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
         WINDOW_WIDTH, WINDOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
     glBindTexture(GL_TEXTURE_2D, 0);
 
     glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
@@ -167,34 +168,46 @@ main(int, char* argv[]) {
     glDrawBuffer(GL_NONE);
     glReadBuffer(GL_NONE);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    Shader depthMapShader("ShadowMapping/depth_shader.vert", "empty.frag");
     // ---------------------------------------------------------------
+
+    Noise noise = Noise();
+    noise.generatePerlin(glm::uvec3(256, 128, 256));
+    unsigned int perlinNoiseID = noise.getPerlinNoiseID();
+    noise.generateWorley(glm::uvec3(256, 128, 256), 10);
+    unsigned int worleyNoiseID = noise.getWorleyNoiseID();
 
     // Postprocessing ------------------------------------------------
     Postprocessing postprocessing(WINDOW_WIDTH, WINDOW_HEIGHT);
     Shader defaultPP("simple.vert", "Postprocessing/postprocessing_basic.frag");
     defaultPP.use();
     defaultPP.setInt("screenTexture", 0);
-    defaultPP.setFloat("aspectRatio", ASPECT_RATIO);
     // ---------------------------------------------------------------
 
     // Clouds ---------------------------------------------------------
     Shader pp_clouds("clouds.vert", "clouds.frag");
     pp_clouds.use();
     pp_clouds.setInt("screenTexture", 0);
-    pp_clouds.setFloat("aspectRatio", ASPECT_RATIO);
+    pp_clouds.setInt("depthTexture", 1);
     pp_clouds.setMat4("proj_mat", proj_matrix);
     pp_clouds.setFloat("near", NEAR_VALUE);
     pp_clouds.setFloat("far", FAR_VALUE);
     pp_clouds.setVec2("uRes", glm::vec2(WINDOW_WIDTH, WINDOW_HEIGHT));
 
-    glm::vec3 cloud_boundsMin(-3.0f, 0.0f, -3.0f);
-    glm::vec3 cloud_boundsMax( 3.0f, 6.0f,  3.0f);
+    glm::vec3 cloud_boundsMin(-100.0f, 20.0f, -100.0f);
+    glm::vec3 cloud_boundsMax( 100.0f, 25.0f,  100.0f);
     pp_clouds.setVec3("boundsMin", cloud_boundsMin);
     pp_clouds.setVec3("boundsMax", cloud_boundsMax);
-    // ----------------------------------------------------------------
 
+    // Settings
+    float CloudScale = 2.0f;
+    float CloudOffset[3] = { 0.0f, 0.0f, 0.0f };
+    float CloudOffsetSpeed[3] = { 0.0f, 0.0f, 0.0f };
+    float DensityThreshold = 0.2f;
+    float DensityMultiplier = 0.53f;
+    float DarknessThreshold = 0.5f;
+    float LightAbsorption = 0.5f;
+    float PhaseVal = 1.0f;
+    // ----------------------------------------------------------------
 
     // Camera ---------------------------------------------------------
     Camera cam(&scene_mat, "Camera");
@@ -223,7 +236,7 @@ main(int, char* argv[]) {
     glm::vec3 lightPos(glm::normalize(glm::vec3(3.0f, 3.0f, 3.0f)));
     glm::mat4 lightProjection, lightView;
     glm::mat4 lightSpaceMatrix;
-    float near_plane = 1.0f, far_plane = 20.5f;
+    float near_plane = -10.0f, far_plane = 20.5f;
     lightProjection = glm::ortho<float>(-20.0, 20.0, -20.0, 20.0, near_plane, far_plane);
     lightView = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     lightSpaceMatrix = lightProjection * lightView;
@@ -239,72 +252,109 @@ main(int, char* argv[]) {
 
         if (!useOrbital) cam.update(i_FRAME);
         // First pass --> render to shadow-----------------------------
-        glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
         glBindFramebuffer(GL_FRAMEBUFFER, shadowDepthMapFBO);
-        glDisable(GL_CULL_FACE);
+        glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
         glClear(GL_DEPTH_BUFFER_BIT);
+        glDisable(GL_CULL_FACE);
         simpleDepthShader.use();
         simpleDepthShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
         render_scene_with_shader(objects, &simpleDepthShader, i_FRAME);
         glEnable(GL_CULL_FACE);
-        glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT); // reset viewport
         // ------------------------------------------------------------
+
 
         // Render to depth-----------------------------
         glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-        glClear(GL_DEPTH_BUFFER_BIT);
-        depthMapShader.use();
-        depthMapShader.setMat4("lightSpaceMatrix", proj_matrix * (!useOrbital ? cam.viewMatrix() : orbitalCam.view_matrix()));
-        render_scene_with_shader(objects, &depthMapShader, i_FRAME);
         glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT); // reset viewport
+        glClear(GL_DEPTH_BUFFER_BIT);
+        simpleDepthShader.use();
+        simpleDepthShader.setMat4("lightSpaceMatrix", proj_matrix * (!useOrbital ? cam.viewMatrix() : orbitalCam.view_matrix()));
+        render_scene_with_shader(objects, &simpleDepthShader, i_FRAME);
         // ------------------------------------------------------------
 
-
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glBindFramebuffer(GL_FRAMEBUFFER, postprocessing.framebufferA);
+        //glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glEnable(GL_DEPTH_TEST);
         // Second pass
         // set light uniforms
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, shadowDepthMap);
         shadow_shader.use();
         shadow_shader.setVec3("viewPos", !useOrbital ? cam.position : orbitalCam.position());
         shadow_shader.setVec3("lightPos", lightPos);
         shadow_shader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
-        shadow_shader.setInt("shadowMap", 4);
+        shadow_shader.setInt("shadowMap", 8);
         // set light uniforms
         shadow_shader_unicol.use();
         shadow_shader_unicol.setVec3("viewPos", !useOrbital ? cam.position : orbitalCam.position());
         shadow_shader_unicol.setVec3("lightPos", lightPos);
         shadow_shader_unicol.setMat4("lightSpaceMatrix", lightSpaceMatrix);
-        shadow_shader_unicol.setInt("shadowMap", 4);
+        shadow_shader_unicol.setInt("shadowMap", 8);
 
-        glActiveTexture(GL_TEXTURE0 + 4);
-        glBindTexture(GL_TEXTURE_2D, shadowDepthMap);
         //render_scene_with_shader(objects, &simpleDepthShader, i_FRAME);
         if (!useOrbital) render_scene(objects, &cam, i_FRAME);
         else render_scene(objects, &orbitalCam, i_FRAME);
         
-
-
         // Third pass -> render framebuffer A to screen buffer
         // ----------------------------------------------------------------------
         // Postprocess pass
         pp_clouds.use();
+
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, depthMap);
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_3D, perlinNoiseID);
+        glActiveTexture(GL_TEXTURE3);
+        glBindTexture(GL_TEXTURE_3D, worleyNoiseID);
+
+
+        pp_clouds.setInt("screenTexture", 0);
+        pp_clouds.setInt("depthTexture", 1);
+        pp_clouds.setInt("perlinNoise", 2);
+        pp_clouds.setInt("worleyNoise", 3);
+
+        pp_clouds.setVec3("CloudOffset", CloudOffset[0], CloudOffset[1], CloudOffset[2]);
+        pp_clouds.setFloat("CloudScale", CloudScale);
+        pp_clouds.setFloat("DensityThreshold", DensityThreshold);
+        pp_clouds.setFloat("DensityMultiplier", DensityMultiplier);
+        pp_clouds.setFloat("DarknessThreshold", DarknessThreshold);
+        pp_clouds.setFloat("LightAbsorption", LightAbsorption);
+        pp_clouds.setFloat("PhaseVal", PhaseVal);
+
+
         pp_clouds.setVec3("lightPos", lightPos);
+        pp_clouds.setFloat("near", NEAR_VALUE);
+        pp_clouds.setFloat("far", FAR_VALUE);
         pp_clouds.setVec3("viewPos", !useOrbital ? cam.position : orbitalCam.position());
         pp_clouds.setMat4("view_mat", !useOrbital ? cam.viewMatrix() : orbitalCam.view_matrix());
         pp_clouds.setInt("frame", i_FRAME);
-        postprocessing.postprocess(&pp_clouds, RenderDirection::A_TO_SCR);
+        postprocessing.postprocess(RenderDirection::A_TO_SCR);
 
         // render Depth map to quad for visual debugging
         // ---------------------------------------------
-        //debugDepthQuad.use();
         //glActiveTexture(GL_TEXTURE0);
         //glBindTexture(GL_TEXTURE_2D, depthMap);
+        //debugDepthQuad.use();
         //renderQuad();
 
         if (enableGUI) handleGUI(objects);
+        // Cloud settings
+        ImGui::Begin("Cloud Settings");
+        ImGui::SliderFloat("Cloud Scale", &CloudScale, 0.0f, 20.0f);
+        ImGui::SliderFloat3("Cloud Offset", &CloudOffsetSpeed[0], -0.05f, 0.05f);
+        ImGui::SliderFloat("Density Threshold", &DensityThreshold, 0.0f, 2.0f);
+        ImGui::SliderFloat("Density Multiplier", &DensityMultiplier, 0.0f, 10.0f);
+        ImGui::SliderFloat("Darkness Threshold", &DarknessThreshold, 0.0f, 10.0f);
+        ImGui::SliderFloat("Light Absorption", &LightAbsorption, 0.0f, 10.0f);
+        ImGui::SliderFloat("Phase Val", &PhaseVal, 0.0f, 3.0f);
+        ImGui::End();
+
+        CloudOffset[0] += CloudOffsetSpeed[0];
+        CloudOffset[1] += CloudOffsetSpeed[1];
+        CloudOffset[2] += CloudOffsetSpeed[2];
 
         // Advance Timeline
         if (play)

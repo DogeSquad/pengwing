@@ -1,6 +1,6 @@
 #include "Postprocessing.h"
 
-void Postprocessing::postprocess(Shader *screenShader, RenderDirection rd)
+void Postprocessing::postprocess(RenderDirection rd)
 {
     glDisable(GL_DEPTH_TEST);
     switch (rd)
@@ -27,11 +27,8 @@ void Postprocessing::postprocess(Shader *screenShader, RenderDirection rd)
         }
     }
     glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glActiveTexture(GL_TEXTURE0);
-    screenShader->use();
-    screenShader->setInt("screenTexture", 0);
-    glBindVertexArray(this->quadVAO);
     switch (rd)
     {
         case RenderDirection::A_TO_B:
@@ -55,8 +52,10 @@ void Postprocessing::postprocess(Shader *screenShader, RenderDirection rd)
             break;
         }
     }
+    glBindVertexArray(this->quadVAO);
     glDrawArrays(GL_TRIANGLES, 0, 6);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glEnable(GL_DEPTH_TEST);
 }
 
 void Postprocessing::renderQuad()

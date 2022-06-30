@@ -1,6 +1,5 @@
 #pragma once
 #include "glad/glad.h"
-#include "Shader.h"
 
 #include <iostream>
 
@@ -17,7 +16,7 @@ public:
 	unsigned int framebufferA;
 	unsigned int framebufferB;
 	Postprocessing(unsigned int WINDOW_WIDTH, unsigned int WINDOW_HEIGHT);
-	void postprocess(Shader *screenShader, RenderDirection rd);
+	void postprocess(RenderDirection rd);
 	void renderQuad();
 	void destroy();
 private:

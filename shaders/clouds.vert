@@ -20,7 +20,6 @@ void main()
     gl_Position = vec4(aPos.xy, 0.0f, 1.0f);
     TexCoords = aTexCoords;
 
-
     mat4 invprojview = inverse(proj_mat) * inverse(view_mat);
     viewOrigin = (invprojview * vec4(aPos.xy, -1.0f, 1.0f) * near).xyz;
     viewDir = (invprojview * vec4(aPos.xy * (far - near), far + near, far - near)).xyz;

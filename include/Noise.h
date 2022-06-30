@@ -14,5 +14,6 @@ public:
 private:
 	unsigned int perlinNoiseID;
 	unsigned int worleyNoiseID;
-	float* dataPerlin;
+	float* perlinData;
+	float* worleyData;
 };
