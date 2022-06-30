@@ -2,39 +2,61 @@
 
 void Postprocessing::postprocess(Shader *screenShader, RenderDirection rd)
 {
-    screenShader->use();
+    glDisable(GL_DEPTH_TEST);
     switch (rd)
     {
         case RenderDirection::A_TO_B:
         {
             glBindFramebuffer(GL_FRAMEBUFFER, framebufferB);
-            glBindTexture(GL_TEXTURE_2D, textureColorbufferA);
             break;
         }
         case RenderDirection::B_TO_A:
         {
             glBindFramebuffer(GL_FRAMEBUFFER, framebufferA);
-            glBindTexture(GL_TEXTURE_2D, textureColorbufferB);
             break;
         }
         case RenderDirection::A_TO_SCR:
         {
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
-            glBindTexture(GL_TEXTURE_2D, textureColorbufferA);
             break;
         }
         case RenderDirection::B_TO_SCR:
         {
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            break;
+        }
+    }
+    glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glActiveTexture(GL_TEXTURE0);
+    screenShader->use();
+    screenShader->setInt("screenTexture", 0);
+    glBindVertexArray(this->quadVAO);
+    switch (rd)
+    {
+        case RenderDirection::A_TO_B:
+        {
+            glBindTexture(GL_TEXTURE_2D, textureColorbufferA);
+            break;
+        }
+        case RenderDirection::B_TO_A:
+        {
+            glBindTexture(GL_TEXTURE_2D, textureColorbufferB);
+            break;
+        }
+        case RenderDirection::A_TO_SCR:
+        {
+            glBindTexture(GL_TEXTURE_2D, textureColorbufferA);
+            break;
+        }
+        case RenderDirection::B_TO_SCR:
+        {
             glBindTexture(GL_TEXTURE_2D, textureColorbufferB);
             break;
         }
     }
-    glClearColor(0.75f, 0.76f, 0.79f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
-    glBindVertexArray(this->quadVAO);
-    glDisable(GL_DEPTH_TEST);
     glDrawArrays(GL_TRIANGLES, 0, 6);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void Postprocessing::renderQuad()
@@ -55,7 +77,6 @@ Postprocessing::Postprocessing(unsigned int WINDOW_WIDTH, unsigned int WINDOW_HE
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glBindTexture(GL_TEXTURE_2D, 0);
-
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, this->textureColorbufferA, 0);
 
     glGenRenderbuffers(1, &this->rboA);
@@ -65,6 +86,7 @@ Postprocessing::Postprocessing(unsigned int WINDOW_WIDTH, unsigned int WINDOW_HE
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, this->rboA);
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
+    
     // Set up Post Processing Quad B
     glGenFramebuffers(1, &this->framebufferB);
     glBindFramebuffer(GL_FRAMEBUFFER, this->framebufferB);
@@ -75,7 +97,6 @@ Postprocessing::Postprocessing(unsigned int WINDOW_WIDTH, unsigned int WINDOW_HE
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glBindTexture(GL_TEXTURE_2D, 0);
-
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, this->textureColorbufferB, 0);
 
     glGenRenderbuffers(1, &this->rboB);
@@ -86,6 +107,8 @@ Postprocessing::Postprocessing(unsigned int WINDOW_WIDTH, unsigned int WINDOW_HE
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    // -------------------------
 
     glGenVertexArrays(1, &this->quadVAO);
     glGenBuffers(1, &this->quadVBO);

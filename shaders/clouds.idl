@@ -1,0 +1,9 @@
+namespace Pengwing
+{
+    [default_interface]
+    runtimeclass clouds : Windows.UI.Xaml.Controls.Page
+    {
+        clouds();
+        Int32 MyProperty;
+    }
+}

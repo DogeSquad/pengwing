@@ -6,6 +6,7 @@
 #include "Drache.h"
 #include "Camera.h"
 #include "Postprocessing.h"
+#include "Noise.h"
 
 #include <string>
 #include <chrono>
@@ -76,20 +77,15 @@ main(int, char* argv[]) {
     Shader shadow_shader("ShadowMapping/shadow_mapping.vert", "ShadowMapping/shadow_mapping.frag");
     objects.push_back(new Drache(shadow_shader, Model("backpack/backpack.obj", true), &scene_mat, "Backpack"));
     objects[0]->position = glm::vec3(0.0f, 0.0f, 0.0f);
-    objects[0]->active = true;
+    objects[0]->active = false;
 
     Shader shadow_shader_unicol("ShadowMapping/shadow_mapping.vert", "ShadowMapping/shadow_mapping_unicol.frag");
     objects.push_back(new Object(shadow_shader_unicol, Model("plane.obj", false), &scene_mat, "Plane"));
-    objects[1]->scale = glm::vec3(100.0f, 1.0f, 100.0f);
+    objects[1]->scale = glm::vec3(50.0f, 1.0f, 50.0f);
     objects[1]->position = glm::vec3(0.0f, 0.0f, 0.0f);
     objects[1]->active = true;
     objects.push_back(new Drache(shadow_shader_unicol, Model("dragon.obj", true), &scene_mat, "Drache"));
-    objects[2]->active = false;
-    
-    Shader boxPP("basic_colors.vert", "clouds.frag");
-    Object clouds_container = Object(boxPP, Model("cube.obj", false), &scene_mat, "Cube");
-    clouds_container.position = glm::vec3(0.0f, 10.0f, 0.0f);
-    clouds_container.scale = glm::vec3(10.0f, 5.0f, 10.0f);
+    objects[2]->active = true;
 
     /*
     Shader albedo_texture = Shader("basic_textured.vert", "basic_textured.frag");
@@ -117,16 +113,18 @@ main(int, char* argv[]) {
     */
     // ---------------------------------------------------
     
-
+    glm::uvec3 noiseSize(64, 64, 64);
+    Noise noise = Noise();
+    noise.generatePerlin(noiseSize);
 
     // Shadow mapping ------------------------------------------------
     const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
-    unsigned int depthMapFBO;
-    glGenFramebuffers(1, &depthMapFBO);
+    unsigned int shadowDepthMapFBO;
+    glGenFramebuffers(1, &shadowDepthMapFBO);
 
-    unsigned int depthMap;
-    glGenTextures(1, &depthMap);
-    glBindTexture(GL_TEXTURE_2D, depthMap);
+    unsigned int shadowDepthMap;
+    glGenTextures(1, &shadowDepthMap);
+    glBindTexture(GL_TEXTURE_2D, shadowDepthMap);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
         SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -135,9 +133,10 @@ main(int, char* argv[]) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
     float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
     glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+    glBindTexture(GL_TEXTURE_2D, 0);
     
-    glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, shadowDepthMapFBO);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadowDepthMap, 0);
     glDrawBuffer(GL_NONE);
     glReadBuffer(GL_NONE);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -145,10 +144,32 @@ main(int, char* argv[]) {
     Shader debugDepthQuad("simple.vert", "ShadowMapping/depth_debug_shader.frag");
     Shader simpleDepthShader("ShadowMapping/depth_shader.vert", "empty.frag");
     debugDepthQuad.use();
-    debugDepthQuad.setInt("depthMap", 1);
+    debugDepthQuad.setInt("depthMap", 0);
     // ---------------------------------------------------------------
 
+    // Depth map -----------------------------------------------------
+    unsigned int depthMapFBO;
+    glGenFramebuffers(1, &depthMapFBO);
 
+    unsigned int depthMap;
+    glGenTextures(1, &depthMap);
+    glBindTexture(GL_TEXTURE_2D, depthMap);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
+        WINDOW_WIDTH, WINDOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
+    glDrawBuffer(GL_NONE);
+    glReadBuffer(GL_NONE);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    Shader depthMapShader("ShadowMapping/depth_shader.vert", "empty.frag");
+    // ---------------------------------------------------------------
 
     // Postprocessing ------------------------------------------------
     Postprocessing postprocessing(WINDOW_WIDTH, WINDOW_HEIGHT);
@@ -159,11 +180,20 @@ main(int, char* argv[]) {
     // ---------------------------------------------------------------
 
     // Clouds ---------------------------------------------------------
-    Shader clouds("basic_colors.vert", "clouds.frag");
-    glm::vec3 cloud_blounds_A;
-    glm::vec3 cloud_bounds_B;
-    // ----------------------------------------------------------------
+    Shader pp_clouds("clouds.vert", "clouds.frag");
+    pp_clouds.use();
+    pp_clouds.setInt("screenTexture", 0);
+    pp_clouds.setFloat("aspectRatio", ASPECT_RATIO);
+    pp_clouds.setMat4("proj_mat", proj_matrix);
+    pp_clouds.setFloat("near", NEAR_VALUE);
+    pp_clouds.setFloat("far", FAR_VALUE);
+    pp_clouds.setVec2("uRes", glm::vec2(WINDOW_WIDTH, WINDOW_HEIGHT));
 
+    glm::vec3 cloud_boundsMin(-3.0f, 0.0f, -3.0f);
+    glm::vec3 cloud_boundsMax( 3.0f, 6.0f,  3.0f);
+    pp_clouds.setVec3("boundsMin", cloud_boundsMin);
+    pp_clouds.setVec3("boundsMax", cloud_boundsMax);
+    // ----------------------------------------------------------------
 
 
     // Camera ---------------------------------------------------------
@@ -183,18 +213,18 @@ main(int, char* argv[]) {
     // ----------------------------------------------------------------
 
     // Anti-Aliasing --------------------------------------------------
-    glEnable(GL_POLYGON_SMOOTH);
     glEnable(GL_MULTISAMPLE);
+    glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
     // ----------------------------------------------------------------
 
 
 
     // Lighting -------------------------------------------------------
-    glm::vec3 lightPos(1.0f, 1.0f, 1.0f);
+    glm::vec3 lightPos(glm::normalize(glm::vec3(3.0f, 3.0f, 3.0f)));
     glm::mat4 lightProjection, lightView;
     glm::mat4 lightSpaceMatrix;
-    float near_plane = -10.0f, far_plane = 10.0f;
-    lightProjection = glm::ortho<float>(-20, 20, -20, 20, near_plane, far_plane);
+    float near_plane = 1.0f, far_plane = 20.5f;
+    lightProjection = glm::ortho<float>(-20.0, 20.0, -20.0, 20.0, near_plane, far_plane);
     lightView = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     lightSpaceMatrix = lightProjection * lightView;
     // ----------------------------------------------------------------
@@ -207,64 +237,72 @@ main(int, char* argv[]) {
         start = std::chrono::system_clock::now();
         glfwPollEvents();
 
+        if (!useOrbital) cam.update(i_FRAME);
         // First pass --> render to shadow-----------------------------
         glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
-        glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+        glBindFramebuffer(GL_FRAMEBUFFER, shadowDepthMapFBO);
         glDisable(GL_CULL_FACE);
         glClear(GL_DEPTH_BUFFER_BIT);
-        if (!useOrbital) cam.update(i_FRAME);
         simpleDepthShader.use();
         simpleDepthShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
         render_scene_with_shader(objects, &simpleDepthShader, i_FRAME);
         glEnable(GL_CULL_FACE);
+        glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT); // reset viewport
         // ------------------------------------------------------------
 
-        // reset viewport
-        glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        //glBindFramebuffer(GL_FRAMEBUFFER, postprocessing.framebufferA);
+        // Render to depth-----------------------------
+        glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+        glClear(GL_DEPTH_BUFFER_BIT);
+        depthMapShader.use();
+        depthMapShader.setMat4("lightSpaceMatrix", proj_matrix * (!useOrbital ? cam.viewMatrix() : orbitalCam.view_matrix()));
+        render_scene_with_shader(objects, &depthMapShader, i_FRAME);
+        glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT); // reset viewport
+        // ------------------------------------------------------------
+
+
+        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        glBindFramebuffer(GL_FRAMEBUFFER, postprocessing.framebufferA);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        glEnable(GL_DEPTH_TEST);
         // Second pass
         // set light uniforms
         shadow_shader.use();
         shadow_shader.setVec3("viewPos", !useOrbital ? cam.position : orbitalCam.position());
         shadow_shader.setVec3("lightPos", lightPos);
         shadow_shader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
-        shadow_shader.setInt("shadowMap", 1);
+        shadow_shader.setInt("shadowMap", 4);
         // set light uniforms
         shadow_shader_unicol.use();
         shadow_shader_unicol.setVec3("viewPos", !useOrbital ? cam.position : orbitalCam.position());
         shadow_shader_unicol.setVec3("lightPos", lightPos);
         shadow_shader_unicol.setMat4("lightSpaceMatrix", lightSpaceMatrix);
-        shadow_shader_unicol.setInt("shadowMap", 1);
+        shadow_shader_unicol.setInt("shadowMap", 4);
 
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, depthMap);
-        glEnable(GL_DEPTH_TEST);
+        glActiveTexture(GL_TEXTURE0 + 4);
+        glBindTexture(GL_TEXTURE_2D, shadowDepthMap);
         //render_scene_with_shader(objects, &simpleDepthShader, i_FRAME);
         if (!useOrbital) render_scene(objects, &cam, i_FRAME);
         else render_scene(objects, &orbitalCam, i_FRAME);
         
-        // render Depth map to quad for visual debugging
-        // ---------------------------------------------
-        // debugDepthQuad.use();
-        // glActiveTexture(GL_TEXTURE0);
-        // glBindTexture(GL_TEXTURE_2D, depthMap);
-        // renderQuad();
 
 
         // Third pass -> render framebuffer A to screen buffer
         // ----------------------------------------------------------------------
-        glEnable(GL_CULL_FACE);
-        clouds_container.update(i_FRAME);
-        clouds.use();
-        clouds.setVec3("lightPos", lightPos);
-        clouds.setVec3("viewPos", !useOrbital ? cam.position : orbitalCam.position());
-        clouds_container.render(!useOrbital ? cam.viewMatrix() : orbitalCam.view_matrix(), proj_matrix);
-
         // Postprocess pass
-        // postprocessing.postprocess(&defaultPP, RenderDirection::A_TO_SCR);
+        pp_clouds.use();
+        pp_clouds.setVec3("lightPos", lightPos);
+        pp_clouds.setVec3("viewPos", !useOrbital ? cam.position : orbitalCam.position());
+        pp_clouds.setMat4("view_mat", !useOrbital ? cam.viewMatrix() : orbitalCam.view_matrix());
+        pp_clouds.setInt("frame", i_FRAME);
+        postprocessing.postprocess(&pp_clouds, RenderDirection::A_TO_SCR);
+
+        // render Depth map to quad for visual debugging
+        // ---------------------------------------------
+        //debugDepthQuad.use();
+        //glActiveTexture(GL_TEXTURE0);
+        //glBindTexture(GL_TEXTURE_2D, depthMap);
+        //renderQuad();
 
         if (enableGUI) handleGUI(objects);
 

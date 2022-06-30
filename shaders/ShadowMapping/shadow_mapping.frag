@@ -1,4 +1,4 @@
-#version 330 core
+#version 420 core
 
 uniform sampler2D shadowMap;
 
@@ -52,10 +52,10 @@ float ShadowCalculation(vec4 fragPosLightSpace, float dotNL)
 
 void main()
 {
+    vec3 lightColor = vec3(0.9f, 0.9f, 0.8f);
     vec3 color = texture(material.texture_diffuse1, fs_in.TexCoords).rgb;
-    vec3 lightDir = normalize(lightPos - fs_in.FragPos);
+    vec3 lightDir = normalize(lightPos);
     vec3 normal = normalize(fs_in.Normal);
-    vec3 lightColor = vec3(1.0f);
     float dotNL = dot(lightDir, normal);
 
     // ambient
