@@ -54,9 +54,10 @@ void main()
 {
     vec3 lightColor = vec3(0.9f, 0.9f, 0.8f);
     vec3 color = texture(material.texture_diffuse1, fs_in.TexCoords).rgb;
-    vec3 lightDir = normalize(lightPos);
+    vec3 lightDir = normalize(lightPos - fs_in.FragPos);
     vec3 normal = normalize(fs_in.Normal);
-    float dotNL = dot(lightDir, normal);
+    vec3 normalizedLightPos = normalize(lightPos);
+    float dotNL = dot(normalizedLightPos, normal);
 
     // ambient
     vec3 ambient = 0.15f * lightColor;

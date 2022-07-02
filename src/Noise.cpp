@@ -18,7 +18,7 @@ void Noise::generatePerlin(glm::uvec3 size)
 	this->perlinData = new float[nPointsInSlice * size.z];
 	//auto buffer = std::make_unique<float[]>(nPointsInSlice * size.z);
 
-	const SimplexNoise simplex(8.0f, 2.0f, 2.0f, 0.4f);
+	const SimplexNoise simplex(2.0f, 2.0f, 2.0f, 0.4f);
 	const int octaves = static_cast<int>(8);
 
 	for (int z = 0; z < size.z; z++)
@@ -67,7 +67,7 @@ void Noise::generateWorley(glm::uvec3 size, unsigned int numPoints)
 	this->worleyData = new float[nPointsInSlice * size.z];
 	//auto buffer = std::make_unique<float[]>(nPointsInSlice * size.z);
 
-	const SimplexNoise simplex(8.0f, 2.0f, 2.0f, 0.4f);
+	const SimplexNoise simplex(0.5f, 2.0f, 2.0f, 0.4f);
 	const int octaves = static_cast<int>(8);
 
 	std::vector<glm::vec3> points;

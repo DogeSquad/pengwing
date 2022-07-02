@@ -36,7 +36,7 @@ uniform float PhaseVal;
 
 // Ray marching
 const int NUM_STEPS = 200;
-const int NUM_STEPS_LIGHT = 15;
+const int NUM_STEPS_LIGHT = 10;
 uniform vec3 lightPos;
 // Noise functions: https://github.com/ashima/webgl-noise
 
@@ -52,9 +52,10 @@ vec2 intersectAABB(vec3 boxMin, vec3 boxMax, vec3 rayOrigin, vec3 rayDir) {
 float sampleDensity(vec3 pos)
 {
     vec3 uvw = pos * CloudScale * 0.001f + CloudOffset * 0.01f;
-    float worleyNoiseSample = texture(worleyNoise, uvw).r;
+    float perlinNoiseSample = texture(perlinNoise, 10.0f * uvw).r;
+    float worleyNoiseSample = texture(worleyNoise, uvw + 12.0f * vec3(perlinNoiseSample)).r;
 
-    float density = (texture(perlinNoise, uvw + 0.1f * vec3(worleyNoiseSample)).r + 0.5f * worleyNoiseSample - DensityThreshold) * DensityMultiplier;
+    float density = max(0.0f, (worleyNoiseSample + 0.2f * perlinNoiseSample - DensityThreshold) * DensityMultiplier);
     //float density = texture(perlinNoise, uvw).r;
     //float density = max(0.0f, (0.5f * fbm(uvw, 7)) - DensityThreshold) * DensityMultiplier;
     //float density = fbm(uvw, 7);
@@ -69,7 +70,7 @@ float linearize_depth(float d,float zNear,float zFar)
 
 float lightmarch(vec3 pos)
 {
-    vec3 dirToLight = lightPos;
+    vec3 dirToLight = lightPos - pos;
     float dstInsideBox = intersectAABB(boundsMin, boundsMax, pos, dirToLight).y;
 
     float stepSize = dstInsideBox/NUM_STEPS_LIGHT;
@@ -78,11 +79,11 @@ float lightmarch(vec3 pos)
     for (int i = 0; i < NUM_STEPS_LIGHT; i++)
     {
         pos += dirToLight * stepSize;
-        totalDensity += max(0, sampleDensity(pos) * stepSize);
+        totalDensity += max(0.0f, sampleDensity(pos) * stepSize);
     }
 
     float transmittance = exp(-totalDensity * LightAbsorption);
-    return DarknessThreshold + transmittance * (1 - DarknessThreshold);
+    return DarknessThreshold + transmittance * (1.0f - DarknessThreshold);
 }
 
 void main()
@@ -136,34 +137,4 @@ void main()
         }
         FragColor = mix(cloudCol * lightEnergy, FragColor, transmittance);
     }
-
-    //FragColor = col;
-    //if (dstToBox <= dstInsideBox && dstToBox < depth)
-    //{
-    //    FragColor = mix(texture(screenTexture, TexCoords.xy), vec4(1.0f), sampleDensity(rayOrigin + rayDir_norm * dstToBox));
-    //}
-
-
-    // Ray Direction Debug
-    //vec4 lines = vec4(((rayDir.x > -0.001f && rayDir.x < 0.001f) 
-    //                || (rayDir.y > -0.001f && rayDir.y < 0.001f) 
-    //                || (rayDir.z > -0.001f && rayDir.z < 0.001f)) ? 1.0f : 0.0f);
-    //FragColor = texture(screenTexture, TexCoords.xy);
-    //FragColor = mix(vec4(0.5f * rayDir + vec3(0.5f), 1.0f), FragColor, 0.7f);
-    //FragColor = mix(lines, FragColor, 1.0f -lines.w);
-
-    
-    //float dstTravelled = 0.0f;
-    //
-    //float totalDensity = 0.0f;
-    //float stepSize = dstInsideBox / NUM_STEPS;
-    //float dstLimit = dstInsideBox;
-    //while(dstTravelled < dstLimit)
-    //{
-    //    vec3 rayPos = rayOrigin + rayDir * (dstToBox + dstTravelled);
-    //    totalDensity += sampleDensity(0.05f * rayPos) * stepSize;
-    //    dstTravelled += stepSize;
-    //}
-    //float transmittance = exp(-totalDensity);
-    //FragColor = mix(vec4(1.0f), texture(screenTexture, TexCoords.xy), transmittance);
 }

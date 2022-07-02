@@ -46,10 +46,11 @@ void main()
 {
 
     vec3 color = vec3(0.8f, 0.8f, 0.85f);
-    vec3 lightColor = vec3(1.0f, 1.0f, 1.0f);
-    vec3 lightDir = normalize(lightPos);
+    vec3 lightColor = vec3(0.6f, 0.6f, 0.6f);
+    vec3 lightDir = normalize(lightPos - fs_in.FragPos);
     vec3 normal = normalize(fs_in.Normal);
-    float dotNL = dot(lightDir, normal);
+    vec3 normalizedLightPos = normalize(lightPos);
+    float dotNL = dot(normalizedLightPos, normal);
 
     // ambient
     vec3 ambient = 0.15f * lightColor;
