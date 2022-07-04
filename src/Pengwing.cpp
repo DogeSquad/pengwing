@@ -20,7 +20,7 @@ constexpr float ASPECT_RATIO = static_cast<float>(WINDOW_WIDTH) / static_cast<fl
 // Camera Settings
 const float FOV        = 45.0f;
 const float NEAR_VALUE = 0.1f;
-const float FAR_VALUE  = 100.0f;
+const float FAR_VALUE  = 150.0f;
 bool useOrbital        = true;
 
 // GUI Settings
@@ -67,7 +67,7 @@ main(int, char* argv[]) {
     if (enableGUI) init_imgui(window);
 
     //camera_orbital cam(window);
-    proj_matrix = glm::perspective(FOV, 1.0f, NEAR_VALUE, FAR_VALUE);
+    proj_matrix = glm::perspective(FOV, float(WINDOW_WIDTH)/float(WINDOW_HEIGHT), NEAR_VALUE, FAR_VALUE);
 
     // Loading Objects ----------------------------------
     // --
@@ -81,9 +81,9 @@ main(int, char* argv[]) {
 
     Shader shadow_shader_unicol("ShadowMapping/shadow_mapping.vert", "ShadowMapping/shadow_mapping_unicol.frag");
     objects.push_back(new Object(shadow_shader_unicol, Model("plane.obj", false), &scene_mat, "Plane"));
-    objects[1]->scale = glm::vec3(50.0f, 1.0f, 50.0f);
+    objects[1]->scale = glm::vec3(200.0f, 1.0f, 200.0f);
     objects[1]->position = glm::vec3(0.0f, 0.0f, 0.0f);
-    objects[1]->active = false;
+    objects[1]->active = true;
     objects.push_back(new Drache(shadow_shader_unicol, Model("dragon.obj", true), &scene_mat, "Drache"));
     objects[2]->active = true;
 
@@ -113,8 +113,14 @@ main(int, char* argv[]) {
     */
     // ---------------------------------------------------
     
+    // Background ----------------------------------------------------
+    Shader backgroundShader = Shader("simple.vert", "background.frag");
+    float fogColor[3] = { 0.839f, 0.910f, 0.953f };
+    float skyColor[3] = { 0.160f, 0.605f, 0.867f };
+    // ---------------------------------------------------------------
+
     // Shadow mapping ------------------------------------------------
-    const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
+    const unsigned int SHADOW_WIDTH = 2048, SHADOW_HEIGHT = 2048;   // Default 1024
     unsigned int shadowDepthMapFBO;
     glGenFramebuffers(1, &shadowDepthMapFBO);
 
@@ -142,6 +148,9 @@ main(int, char* argv[]) {
     Shader simpleDepthShader("ShadowMapping/depth_shader.vert", "empty.frag");
     debugDepthQuad.use();
     debugDepthQuad.setInt("depthMap", 0);
+
+    float minShadowBias = 0.2f;
+    float maxShadowBias = 0.3f;
     // ---------------------------------------------------------------
 
     // Depth map -----------------------------------------------------
@@ -171,7 +180,7 @@ main(int, char* argv[]) {
     // ---------------------------------------------------------------
 
     Noise noise = Noise();
-    noise.generatePerlin(glm::uvec3(256, 128, 256));
+    noise.generatePerlin(glm::uvec3(200, 128, 200));
     unsigned int perlinNoiseID = noise.getPerlinNoiseID();
     noise.generateWorley(glm::uvec3(200, 80, 200), 20);
     unsigned int worleyNoiseID = noise.getWorleyNoiseID();
@@ -199,15 +208,21 @@ main(int, char* argv[]) {
     pp_clouds.setVec3("boundsMax", cloud_boundsMax);
 
     // Settings
-    bool CloudActive = true;
-    float CloudScale = 2.0f;
+    bool CloudActive = false;
+    float CloudScale = 6.231f;
     float CloudOffset[3] = { 0.0f, 0.0f, 0.0f };
-    float CloudOffsetSpeed[3] = { 0.0f, 0.0f, 0.0f };
-    float DensityThreshold = 0.2f;
-    float DensityMultiplier = 0.53f;
-    float DarknessThreshold = 0.5f;
-    float LightAbsorption = 0.5f;
-    float PhaseVal = 1.0f;
+    float CloudOffsetSpeed[3] = { 0.017f, 0.007f, 0.001f };
+    float DensityThreshold = 0.864f;
+    float DensityMultiplier = 1.256f;
+    float DarknessThreshold = 3.869f;
+    float LightAbsorption = 2.06f;
+    float PhaseVal = 0.814f;
+
+    float CloudColor[3] = { 0.95f, 0.95f, 1.0f };
+    // ----------------------------------------------------------------
+
+    // Fog ------------------------------------------------------------
+    Shader atmosphere_fog("simple.vert", "atmosphere_fog.frag");
     // ----------------------------------------------------------------
 
     // Camera ---------------------------------------------------------
@@ -233,11 +248,12 @@ main(int, char* argv[]) {
 
 
     // Lighting -------------------------------------------------------
-    glm::vec3 lightPos(glm::vec3(3.0f, 2.0f, 2.0f));
+    glm::vec3 lightPos(3.0f, 2.0f, 2.0f);
+    glm::vec3 lightColor(0.98f, 0.98f, 0.89f);
     glm::mat4 lightProjection, lightView;
     glm::mat4 lightSpaceMatrix;
-    float near_plane = -1.0f, far_plane = 20.5f;
-    lightProjection = glm::ortho<float>(-30.0, 30.0, -30.0, 30.0, near_plane, far_plane);
+    float near_plane = -1.0f, far_plane = 30.5f;
+    lightProjection = glm::ortho<float>(-50.0, 50.0, -50.0, 50.0, near_plane, far_plane);
     lightView = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     lightSpaceMatrix = lightProjection * lightView;
     // ----------------------------------------------------------------
@@ -277,13 +293,32 @@ main(int, char* argv[]) {
         glClearColor(0.7f, 0.7f, 0.9f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        // Background Rendering ---------------------------------------
+        glDisable(GL_DEPTH_TEST);
+        backgroundShader.use();
+        backgroundShader.setVec2("uRes", glm::vec2(WINDOW_WIDTH, WINDOW_HEIGHT));
+        backgroundShader.setMat4("view_mat", !useOrbital ? cam.viewMatrix() : orbitalCam.view_matrix());
+        backgroundShader.setMat4("proj_mat", proj_matrix);
+        backgroundShader.setVec3("viewPos", !useOrbital ? cam.position : orbitalCam.position());
+        backgroundShader.setVec3("sunPos", lightPos);
+        backgroundShader.setVec3("sunColor", lightColor);
+
+        backgroundShader.setVec3("skyColor", skyColor[0], skyColor[1], skyColor[2]);
+        backgroundShader.setVec3("fogColor", fogColor[0], fogColor[1], fogColor[2]);
+        renderQuad();
         glEnable(GL_DEPTH_TEST);
+        // ------------------------------------------------------------
+        
         // Second pass
         // set light uniforms
+        glActiveTexture(GL_TEXTURE9);
+        glBindTexture(GL_TEXTURE_3D, perlinNoiseID);
         glActiveTexture(GL_TEXTURE8);
         glBindTexture(GL_TEXTURE_2D, shadowDepthMap);
         shadow_shader.use();
         shadow_shader.setVec3("viewPos", !useOrbital ? cam.position : orbitalCam.position());
+        shadow_shader.setFloat("minBias", minShadowBias);
+        shadow_shader.setFloat("maxBias", maxShadowBias);
         shadow_shader.setVec3("lightPos", lightPos);
         shadow_shader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
         shadow_shader.setInt("shadowMap", 8);
@@ -292,7 +327,10 @@ main(int, char* argv[]) {
         shadow_shader_unicol.setVec3("viewPos", !useOrbital ? cam.position : orbitalCam.position());
         shadow_shader_unicol.setVec3("lightPos", lightPos);
         shadow_shader_unicol.setMat4("lightSpaceMatrix", lightSpaceMatrix);
+        shadow_shader_unicol.setFloat("minBias", minShadowBias);
+        shadow_shader_unicol.setFloat("maxBias", maxShadowBias);
         shadow_shader_unicol.setInt("shadowMap", 8);
+        shadow_shader_unicol.setInt("perlinNoise", 9);
 
         //render_scene_with_shader(objects, &simpleDepthShader, i_FRAME);
         if (!useOrbital) render_scene(objects, &cam, i_FRAME);
@@ -325,6 +363,7 @@ main(int, char* argv[]) {
             pp_clouds.setFloat("DarknessThreshold", DarknessThreshold);
             pp_clouds.setFloat("LightAbsorption", LightAbsorption);
             pp_clouds.setFloat("PhaseVal", PhaseVal);
+            pp_clouds.setVec3("CloudColor", CloudColor[0], CloudColor[1], CloudColor[2]);
 
 
             pp_clouds.setVec3("lightPos", lightPos);
@@ -358,6 +397,17 @@ main(int, char* argv[]) {
         ImGui::SliderFloat("Darkness Threshold", &DarknessThreshold, 0.0f, 10.0f);
         ImGui::SliderFloat("Light Absorption", &LightAbsorption, 0.0f, 10.0f);
         ImGui::SliderFloat("Phase Val", &PhaseVal, 0.0f, 3.0f);
+        ImGui::ColorPicker3("Cloud Color", &CloudColor[0]);
+        ImGui::End();
+
+        ImGui::Begin("Background Settings");
+        ImGui::ColorPicker3("Sky Color", &skyColor[0]);
+        ImGui::ColorPicker3("Fog Color", &fogColor[0]);
+        ImGui::End();
+
+        ImGui::Begin("Shadow Settings");
+        ImGui::SliderFloat("Minimum Shadow Bias", &minShadowBias, 0.00f, 3.0f);
+        ImGui::SliderFloat("Maximum Shadow Bias", &maxShadowBias, 0.00f, 5.0f);
         ImGui::End();
 
         CloudOffset[0] += CloudOffsetSpeed[0];
@@ -391,6 +441,10 @@ main(int, char* argv[]) {
 
     cleanup_imgui();
     glfwTerminate();
+}
+
+void genNoise(unsigned int )
+{
 }
 
 unsigned int quadVAO = 0;

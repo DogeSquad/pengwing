@@ -3,6 +3,7 @@
 out vec4 FragColor;
 
 uniform sampler2D shadowMap;
+uniform sampler3D perlinNoise;
 
 in VS_OUT {
     vec3 FragPos;
@@ -14,6 +15,9 @@ in VS_OUT {
 uniform vec3 lightPos; 
 uniform vec3 viewPos;
 
+uniform float minBias;
+uniform float maxBias;
+
 float ShadowCalculation(vec4 fragPosLightSpace, float dotNL)
 {
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
@@ -21,7 +25,7 @@ float ShadowCalculation(vec4 fragPosLightSpace, float dotNL)
     //float closestDepth = texture(shadowMap, projCoords.xy).r; 
     float currentDepth = projCoords.z;
     float bias = 0.0f;
-    bias = max(0.3f * (1.0f - dotNL), 0.2f);
+    bias = max(maxBias * (1.0f - dotNL), minBias);
     //float shadow = currentDepth - bias > closestDepth  ? 1.0f : 0.0f; 
     //if(projCoords.z > 1.0f)
     //    shadow = 0.0f;
@@ -44,11 +48,10 @@ float ShadowCalculation(vec4 fragPosLightSpace, float dotNL)
 
 void main()
 {
-
-    vec3 color = vec3(0.8f, 0.8f, 0.85f);
+    vec3 color = vec3(0.95f, 0.95f, 1.0f);
     vec3 lightColor = vec3(0.6f, 0.6f, 0.6f);
     vec3 lightDir = normalize(lightPos - fs_in.FragPos);
-    vec3 normal = normalize(fs_in.Normal);
+    vec3 normal = normalize(fs_in.Normal); // Adding slight noise
     vec3 normalizedLightPos = normalize(lightPos);
     float dotNL = dot(normalizedLightPos, normal);
 

@@ -3,28 +3,28 @@ out vec4 FragColor;
 
 in vec2 TexCoords;
 
-in vec3 viewOrigin;
-in vec3 viewDir;
-
+// Frame Info
 uniform sampler2D screenTexture;
 uniform sampler2D depthTexture;
 uniform sampler3D perlinNoise;
 uniform sampler3D worleyNoise;
 uniform vec2 uRes;
-
 uniform int frame;
 
+// Render Info
 uniform mat4 proj_mat;
 uniform mat4 view_mat;
+uniform vec3 viewPos;
 uniform float near;
 uniform float far;
 
-uniform vec3 viewPos;
+
+// Clouds (adapted from Sebastian Lague https://www.youtube.com/watch?v=4QOcCGI6xOU) 
+//                  and Adam Bengtsson https://www.diva-portal.org/smash/get/diva2:1647354/FULLTEXT02)
 
 uniform vec3 boundsMin;
 uniform vec3 boundsMax;
 
-// Clouds (adapted from Sebastian Lague https://www.youtube.com/watch?v=4QOcCGI6xOU)
 uniform float CloudScale;
 uniform vec3 CloudOffset;
 uniform float DensityThreshold;
@@ -34,11 +34,12 @@ uniform float DarknessThreshold;
 uniform float LightAbsorption;
 uniform float PhaseVal;
 
+uniform vec3 CloudColor;
+
 // Ray marching
 const int NUM_STEPS = 200;
 const int NUM_STEPS_LIGHT = 10;
 uniform vec3 lightPos;
-// Noise functions: https://github.com/ashima/webgl-noise
 
 vec2 intersectAABB(vec3 boxMin, vec3 boxMax, vec3 rayOrigin, vec3 rayDir) {
     vec3 tMin = (boxMin - rayOrigin) / rayDir;
@@ -52,13 +53,11 @@ vec2 intersectAABB(vec3 boxMin, vec3 boxMax, vec3 rayOrigin, vec3 rayDir) {
 float sampleDensity(vec3 pos)
 {
     vec3 uvw = pos * CloudScale * 0.001f + CloudOffset * 0.01f;
-    float perlinNoiseSample = texture(perlinNoise, 10.0f * uvw).r;
-    float worleyNoiseSample = texture(worleyNoise, uvw + 12.0f * vec3(perlinNoiseSample)).r;
 
-    float density = max(0.0f, (worleyNoiseSample + 0.2f * perlinNoiseSample - DensityThreshold) * DensityMultiplier);
-    //float density = texture(perlinNoise, uvw).r;
-    //float density = max(0.0f, (0.5f * fbm(uvw, 7)) - DensityThreshold) * DensityMultiplier;
-    //float density = fbm(uvw, 7);
+    float perlinNoiseSample = texture(perlinNoise, vec3(2.0f * uvw.x, uvw.yz)).r;
+    float worleyNoiseSample = texture(worleyNoise, uvw + 0.6f * vec3(perlinNoiseSample)).r;
+
+    float density = max(0.0f, (worleyNoiseSample + 0.6f * perlinNoiseSample - DensityThreshold) * DensityMultiplier);
     return density;
 }
 
@@ -88,35 +87,29 @@ float lightmarch(vec3 pos)
 
 void main()
 {
+    FragColor = texture(screenTexture, TexCoords.xy);
+
     // Calculate Ray
     vec2 pos = (gl_FragCoord.xy - vec2(uRes.xy) * 0.5f) / float(uRes.x);
-    vec4 col = texture(screenTexture, TexCoords.xy);
-
-    mat3 rot = mat3(view_mat[0][0], view_mat[1][0], view_mat[2][0],
-               view_mat[0][1], view_mat[1][1], view_mat[2][1],
-               view_mat[0][2], view_mat[1][2], view_mat[2][2]);
 
     vec3 rayPos = viewPos;
     vec3 rayDir = (vec4(vec3(pos.xy, 1.0f), 0.0f) * proj_mat * view_mat).xyz;
-    vec3 rayDir_norm = (normalize(rayDir)).xyz;
+    vec3 rayDir_norm = normalize(rayDir);
     
-    float nonLinearDepth = texture(depthTexture, TexCoords.xy).r;
-    float depth = linearize_depth(nonLinearDepth, near, far) * length(rayDir);
+    float depth = linearize_depth(texture(depthTexture, TexCoords.xy).r, near, far) * length(rayDir);
 
     // Perform Ray intersection
     vec2 rayBoxInfo = intersectAABB(boundsMin, boundsMax, rayPos, rayDir_norm);
     float dstToBox = rayBoxInfo.x;
     float dstInsideBox = rayBoxInfo.y;
-    vec3 entryPoint = rayPos + rayDir * dstToBox;
+    vec3 entryPoint = rayPos + rayDir_norm * dstToBox;
     
     float dstTravelled = 0.0f;
     float dstLimit = min(depth - dstToBox, dstInsideBox);
     float stepSize = dstInsideBox / NUM_STEPS;
     float transmittance = 1.0f;
     float lightEnergy = 0.0f;
-
-    FragColor = texture(screenTexture, TexCoords.xy);;
-    vec4 cloudCol = vec4(1.0f);
+    
     if (dstToBox <= dstInsideBox && dstToBox < depth)
     {
         while (dstTravelled < dstLimit) {
@@ -128,13 +121,12 @@ void main()
                 lightEnergy += density * stepSize * transmittance * lightTransmittance * PhaseVal;
                 transmittance *= exp(-density * stepSize);
                     
-                // Exit early if T is close to zero as further samples won't affect the result much
                 if (transmittance < 0.01f) {
                     break;
                 }
             }
             dstTravelled += stepSize;
         }
-        FragColor = mix(cloudCol * lightEnergy, FragColor, transmittance);
+        FragColor = mix(vec4(CloudColor, 1.0f) * lightEnergy, FragColor, transmittance);
     }
 }

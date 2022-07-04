@@ -18,6 +18,9 @@ in VS_OUT {
 } fs_in;
 
 
+uniform float minBias;
+uniform float maxBias;
+
 uniform vec3 lightPos; 
 uniform vec3 viewPos;
 uniform Material material;
@@ -29,7 +32,7 @@ float ShadowCalculation(vec4 fragPosLightSpace, float dotNL)
     //float closestDepth = texture(shadowMap, projCoords.xy).r; 
     float currentDepth = projCoords.z;
     float bias = 0.0f;
-    bias = max(0.3f * (1.0f - dotNL), 0.2f);
+    bias = max(maxBias * (1.0f - dotNL), minBias);
     //float shadow = currentDepth - bias > closestDepth  ? 1.0f : 0.0f; 
     //if(projCoords.z > 1.0f)
     //    shadow = 0.0f;
