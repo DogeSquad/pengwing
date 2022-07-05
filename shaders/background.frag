@@ -1,5 +1,5 @@
 #version 330 core
-#define M_PI 3.1415926535897932384626433832795
+#define M_PI 3.1415926535897932384626433832795f
 
 
 out vec4 FragColor;
@@ -24,7 +24,7 @@ float gradFunc(float x)
 
 void main()
 {   
-    vec2 pos = (gl_FragCoord.xy - vec2(uRes.xy) * 0.5f) / float(uRes.x);
+    vec2 pos = (gl_FragCoord.xy - vec2(uRes.xy) * 0.5f) / float(uRes.y);
     //vec2 pos = 2.0f * vec2(gl_FragCoord.x / float(uRes.y), gl_FragCoord.y / float(uRes.x)) - vec2(1.0f);
 
     vec3 rayPos = viewPos;

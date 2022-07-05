@@ -66,7 +66,12 @@ float linearize_depth(float d,float zNear,float zFar)
     float z_n = 2.0f * d - 1.0f;
     return 2.0f * zNear * zFar / (zFar + zNear - z_n * (zFar - zNear));
 }
-
+float col_ramp(float fac, float min, float max, float val_min, float val_max)
+{
+    float m = (val_max - val_min)/(max-min);
+    float b = -min * m;
+    return (fac < min) ? val_min : ((fac > max) ? val_max : fac*m+b);
+}
 float lightmarch(vec3 pos)
 {
     vec3 dirToLight = lightPos - pos;
@@ -127,6 +132,6 @@ void main()
             }
             dstTravelled += stepSize;
         }
-        FragColor = mix(vec4(CloudColor, 1.0f) * lightEnergy, FragColor, transmittance);
+        FragColor = mix(vec4(CloudColor, 1.0f) * lightEnergy, FragColor, col_ramp(transmittance,0.1f, 0.9f,  0.0f, 1.0f));
     }
 }
