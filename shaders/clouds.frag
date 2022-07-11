@@ -132,7 +132,6 @@ void main()
             }
             dstTravelled += stepSize;
         }
-        FragColor = mix(vec4(CloudColor, 1.0f) * lightEnergy, FragColor, transmittance);
-        FragColor = max(vec4(CloudColor, 1.0f) * lightEnergy * transmittance, FragColor);
+        FragColor = mix(vec4(CloudColor, 1.0f), FragColor, 1.0f - clamp(lightEnergy, 0.0f, 1.0f));
     }
 }
