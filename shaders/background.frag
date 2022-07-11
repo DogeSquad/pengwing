@@ -1,7 +1,6 @@
 #version 330 core
 #define M_PI 3.1415926535897932384626433832795f
 
-
 out vec4 FragColor;
 
 in vec2 TexCoords;
@@ -27,8 +26,6 @@ float greatCircleDistance(vec3 a, vec3 b)
     float angle = asin(euclideanDst * 0.5f);  // Assumed R is 1.0f
 
     return acos(dot(a, b));
-
-    //return 2.0f * angle;
 }
 
 void main()
@@ -42,18 +39,15 @@ void main()
 
     vec3 sunPos_norm = normalize(sunPos);
 
-    if (greatCircleDistance(sunPos_norm, rayDir) < 0.032f) 
+    if (greatCircleDistance(sunPos_norm, rayDir) < 0.02f) 
     {
         FragColor = vec4(sunColor, 1.0f);
         return;
     }
 
     FragColor = vec4(mix(skyColor, fogColor, gradFunc(rayDir.y)), 1.0f);
-    float sunPow = pow(max(0.0f, 13.0f * dot(rayDir, sunPos_norm) - 12.0f), 8);
+    float sunPow = pow(max(0.0f, 40.0f * dot(rayDir, sunPos_norm) - 39.0f), 8);
     FragColor = mix(FragColor, vec4(sunColor, 1.0f), sunPow);
-
-    //FragColor += vec4(sunColor, 1.0f) * max(0.0f, dot(rayDir, normalize(sunPos)));
-
 
     // Ray Direction Debug
     //vec4 lines = vec4(((rayDir.x > -0.001f && rayDir.x < 0.001f) 

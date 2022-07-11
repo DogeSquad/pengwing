@@ -17,6 +17,9 @@ in VS_OUT {
     vec4 FragPosLightSpace;
 } fs_in;
 
+uniform float near;
+uniform float far;
+uniform vec3 fogColor;
 
 uniform float minBias;
 uniform float maxBias;
@@ -53,6 +56,16 @@ float ShadowCalculation(vec4 fragPosLightSpace, float dotNL)
     shadow /= 9.0f;
     return shadow;
 }
+float getFogFactor(float d)
+{
+    float farMultiplier = 1.05f;
+    float newFar = far * farMultiplier;
+    if (d>=newFar) return 1;
+    if (d<=near) return 0;
+
+    return 1 - (newFar - d) / (newFar - near);
+}
+
 
 void main()
 {    
@@ -82,4 +95,5 @@ void main()
     vec3 lighting = (ambient + (1.0 - shadow) * (diffuse + specular)) * color;    
     
     FragColor = vec4(lighting, 1.0);
+    FragColor = mix(FragColor, vec4(fogColor, 1.0f), pow(getFogFactor(distance(viewPos, fs_in.FragPos)), 3));
 } 

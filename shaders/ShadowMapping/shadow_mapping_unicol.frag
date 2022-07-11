@@ -3,7 +3,6 @@
 out vec4 FragColor;
 
 uniform sampler2D shadowMap;
-uniform sampler2D depthMap;
 
 in VS_OUT {
     vec3 FragPos;
@@ -55,6 +54,15 @@ float ShadowCalculation(vec4 fragPosLightSpace)
     shadow /= 9.0f;
     return shadow;
 }
+float getFogFactor(float d)
+{
+    float farMultiplier = 1.05f;
+    float newFar = far * farMultiplier;
+    if (d>=newFar) return 1;
+    if (d<=near) return 0;
+
+    return 1 - (newFar - d) / (newFar - near);
+}
 
 void main()
 {
@@ -69,16 +77,14 @@ void main()
     // specular
     vec3 viewDir = normalize(viewPos - fs_in.FragPos);
     vec3 reflectDir = reflect(-lightDir, normal);
-    float spec = 0.0f;
     vec3 halfwayDir = normalize(lightDir + viewDir);  
-    spec = pow(max(dot(normal, halfwayDir), 0.0f), 64.0f);
+    float spec = pow(max(dot(normal, halfwayDir), 0.0f), 64.0f);
     vec3 specular = spec * lightColor;    
     // calculate shadow
     float shadow = ShadowCalculation(fs_in.FragPosLightSpace);                      
     vec3 lighting = (ambient + (1.0f - shadow) * (diffuse + specular)) * color;    
     
     FragColor = vec4(lighting, 1.0f);
-    FragColor = mix(FragColor, vec4(fogColor, 1.0f), linearize_depth(texture(depthMap, fs_in.TexCoords).r, near, far));
-    FragColor = vec4(vec3(linearize_depth(texture(depthMap, fs_in.TexCoords).r, near, far)), 1.0f);
+    FragColor = mix(FragColor, vec4(fogColor, 1.0f), pow(getFogFactor(distance(viewPos, fs_in.FragPos)), 3));
     //FragColor = vec4(max(0.0f, dot(normal, normalize(lightPos))) * color, 1.0f);
 } 

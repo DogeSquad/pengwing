@@ -18,6 +18,7 @@ uniform vec3 viewPos;
 uniform float near;
 uniform float far;
 
+uniform vec3 skyColor;
 
 // Clouds (adapted from Sebastian Lague https://www.youtube.com/watch?v=4QOcCGI6xOU) 
 //                  and Adam Bengtsson https://www.diva-portal.org/smash/get/diva2:1647354/FULLTEXT02)
@@ -37,8 +38,8 @@ uniform float PhaseVal;
 uniform vec3 CloudColor;
 
 // Ray marching
-const int NUM_STEPS = 200;
-const int NUM_STEPS_LIGHT = 10;
+const int NUM_STEPS = 500;
+const int NUM_STEPS_LIGHT = 15;
 uniform vec3 lightPos;
 
 vec2 intersectAABB(vec3 boxMin, vec3 boxMax, vec3 rayOrigin, vec3 rayDir) {
@@ -89,10 +90,19 @@ float lightmarch(vec3 pos)
     float transmittance = exp(-totalDensity * LightAbsorption);
     return DarknessThreshold + transmittance * (1.0f - DarknessThreshold);
 }
+float getFogFactor(float d)
+{
+    float farMultiplier = 1.05f;
+    float newFar = far * farMultiplier;
+    if (d>=newFar) return 1;
+    if (d<=near) return 0;
+
+    return 1 - (newFar - d) / (newFar - near);
+}
 
 void main()
 {
-    FragColor = texture(screenTexture, TexCoords.xy);
+    vec4 col = texture(screenTexture, TexCoords.xy);
 
     // Calculate Ray
     vec2 pos = (gl_FragCoord.xy - vec2(uRes.xy) * 0.5f) / float(uRes.y);
@@ -132,6 +142,12 @@ void main()
             }
             dstTravelled += stepSize;
         }
-        FragColor = mix(vec4(CloudColor, 1.0f), FragColor, 1.0f - clamp(lightEnergy, 0.0f, 1.0f));
+        FragColor = mix(vec4(CloudColor, 1.0f), col, 1.0f - clamp(lightEnergy, 0.0f, 1.0f));
+        FragColor = mix(FragColor, col, pow(getFogFactor(dstToBox), 3));
+        //FragColor = mix(col, vec4(skyColor, 1.0f), pow(getFogFactor(dstToBox), 3)); // Not working ):
+    }
+    else 
+    {
+        FragColor = col;
     }
 }
