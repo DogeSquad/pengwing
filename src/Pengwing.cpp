@@ -287,7 +287,7 @@ main(int, char* argv[]) {
         start = std::chrono::system_clock::now();
         glfwPollEvents();
 
-        lightPos.y = glm::sin(i_FRAME * 0.01f);
+        //lightPos.y = glm::sin(i_FRAME * 0.01f);
 
         if (!useOrbital) cam.update(i_FRAME);
         // First pass --> render to shadow-----------------------------
@@ -364,7 +364,7 @@ main(int, char* argv[]) {
         glActiveTexture(GL_TEXTURE8);
         glBindTexture(GL_TEXTURE_2D, shadowDepthMap);
         glActiveTexture(GL_TEXTURE9);
-        glBindTexture(GL_TEXTURE_3D, perlinNoiseID);
+        glBindTexture(GL_TEXTURE_3D, depthMap);
         shadow_shader.use();
         shadow_shader.setVec3("viewPos", !useOrbital ? cam.position : orbitalCam.position());
         shadow_shader.setFloat("minBias", minShadowBias);
@@ -373,6 +373,7 @@ main(int, char* argv[]) {
         shadow_shader.setVec3("lightPos", lightPos);
         shadow_shader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
         shadow_shader.setInt("shadowMap", 8);
+        shadow_shader.setInt("depthMap", 9);
         // set light uniforms
         shadow_shader_unicol.use();
         shadow_shader_unicol.setVec3("viewPos", !useOrbital ? cam.position : orbitalCam.position());
@@ -381,8 +382,11 @@ main(int, char* argv[]) {
         shadow_shader_unicol.setFloat("minBias", minShadowBias);
         shadow_shader_unicol.setFloat("maxBias", maxShadowBias);
         shadow_shader_unicol.setVec3("lightColor", lightColor);
+        shadow_shader_unicol.setVec3("fogColor", fogColor[0], fogColor[1], fogColor[2]);
+        shadow_shader_unicol.setFloat("near", NEAR_VALUE);
+        shadow_shader_unicol.setFloat("far", FAR_VALUE);
         shadow_shader_unicol.setInt("shadowMap", 8);
-        shadow_shader_unicol.setInt("perlinNoise", 9);
+        shadow_shader_unicol.setInt("depthMap", 9);
 
         //render_scene_with_shader(objects, &simpleDepthShader, i_FRAME);
         if (!useOrbital) render_scene(objects, &cam, i_FRAME);

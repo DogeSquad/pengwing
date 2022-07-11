@@ -3,7 +3,7 @@
 out vec4 FragColor;
 
 uniform sampler2D shadowMap;
-uniform sampler3D perlinNoise;
+uniform sampler2D depthMap;
 
 in VS_OUT {
     vec3 FragPos;
@@ -16,9 +16,18 @@ uniform vec3 lightPos;
 uniform vec3 lightColor;
 uniform vec3 viewPos;
 
+uniform float near;
+uniform float far;
+uniform vec3 fogColor;
+
 uniform float minBias;
 uniform float maxBias;
 
+float linearize_depth(float d,float zNear,float zFar)
+{
+    float z_n = 2.0f * d - 1.0f;
+    return 2.0f * zNear * zFar / (zFar + zNear - z_n * (zFar - zNear));
+}
 float ShadowCalculation(vec4 fragPosLightSpace)
 {
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
@@ -69,5 +78,7 @@ void main()
     vec3 lighting = (ambient + (1.0f - shadow) * (diffuse + specular)) * color;    
     
     FragColor = vec4(lighting, 1.0f);
-    FragColor = vec4(max(0.0f, dot(normal, normalize(lightPos))) * color, 1.0f);
+    FragColor = mix(FragColor, vec4(fogColor, 1.0f), linearize_depth(texture(depthMap, fs_in.TexCoords).r, near, far));
+    FragColor = vec4(vec3(linearize_depth(texture(depthMap, fs_in.TexCoords).r, near, far)), 1.0f);
+    //FragColor = vec4(max(0.0f, dot(normal, normalize(lightPos))) * color, 1.0f);
 } 
