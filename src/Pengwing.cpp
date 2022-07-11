@@ -115,8 +115,28 @@ main(int, char* argv[]) {
     
     // Background ----------------------------------------------------
     Shader backgroundShader = Shader("simple.vert", "background.frag");
+    Shader backgroundDraw = Shader("simple.vert", "backgroundDraw.frag");
     float fogColor[3] = { 0.839f, 0.910f, 0.953f };
     float skyColor[3] = { 0.160f, 0.605f, 0.867f };
+
+    unsigned int backgroundFBO;
+    glGenFramebuffers(1, &backgroundFBO);
+
+    unsigned int background;
+    glGenTextures(1, &background);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, background);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
+        WINDOW_WIDTH, WINDOW_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, backgroundFBO);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, background, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
     // ---------------------------------------------------------------
 
     // Shadow mapping ------------------------------------------------
@@ -149,8 +169,8 @@ main(int, char* argv[]) {
     debugDepthQuad.use();
     debugDepthQuad.setInt("depthMap", 0);
 
-    float minShadowBias = 0.2f;
-    float maxShadowBias = 0.3f;
+    float minShadowBias = 0.031f;
+    float maxShadowBias = 0.051f;
     // ---------------------------------------------------------------
 
     // Depth map -----------------------------------------------------
@@ -202,12 +222,11 @@ main(int, char* argv[]) {
     pp_clouds.setFloat("far", FAR_VALUE);
     pp_clouds.setVec2("uRes", glm::vec2(WINDOW_WIDTH, WINDOW_HEIGHT));
 
-    glm::vec3 cloud_boundsMin(-100.0f, 20.0f, -100.0f);
-    glm::vec3 cloud_boundsMax( 100.0f, 25.0f,  100.0f);
+    glm::vec3 cloud_boundsMin(-1000.0f, 50.0f, -1000.0f);
+    glm::vec3 cloud_boundsMax( 1000.0f, 55.0f,  1000.0f);
     pp_clouds.setVec3("boundsMin", cloud_boundsMin);
     pp_clouds.setVec3("boundsMax", cloud_boundsMax);
 
-    // Settings
     bool CloudActive = false;
     float CloudScale = 6.231f;
     float CloudOffset[3] = { 0.0f, 0.0f, 0.0f };
@@ -222,7 +241,8 @@ main(int, char* argv[]) {
     // ----------------------------------------------------------------
 
     // Fog ------------------------------------------------------------
-    Shader atmosphere_fog("simple.vert", "atmosphere_fog.frag");
+    //Shader atmosphere_fog("simple.vert", "atmosphere_fog.frag");
+    Shader pp_fog("simple.vert", "Postprocessing/postprocessing_fog.frag");
     // ----------------------------------------------------------------
 
     // Camera ---------------------------------------------------------
@@ -243,17 +263,18 @@ main(int, char* argv[]) {
 
     // Anti-Aliasing --------------------------------------------------
     glEnable(GL_MULTISAMPLE);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
     // ----------------------------------------------------------------
 
 
     // Lighting -------------------------------------------------------
-    glm::vec3 lightPos(3.0f, 2.0f, 2.0f);
+    glm::vec3 lightPos(0.0f, 1.0f, -1.0f);
     glm::vec3 lightColor(0.98f, 0.98f, 0.89f);
     glm::mat4 lightProjection, lightView;
     glm::mat4 lightSpaceMatrix;
     float near_plane = -1.0f, far_plane = 30.5f;
-    lightProjection = glm::ortho<float>(-50.0, 50.0, -50.0, 50.0, near_plane, far_plane);
+    lightProjection = glm::ortho<float>(-50.0f, 50.0f, -50.0f, 50.0f, near_plane, far_plane);
     lightView = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     lightSpaceMatrix = lightProjection * lightView;
     // ----------------------------------------------------------------
@@ -265,6 +286,8 @@ main(int, char* argv[]) {
     while (glfwWindowShouldClose(window) == false) {
         start = std::chrono::system_clock::now();
         glfwPollEvents();
+
+        lightPos.y = glm::sin(i_FRAME * 0.01f);
 
         if (!useOrbital) cam.update(i_FRAME);
         // First pass --> render to shadow-----------------------------
@@ -279,7 +302,7 @@ main(int, char* argv[]) {
         // ------------------------------------------------------------
 
 
-        // Render to depth-----------------------------
+        // Render to depth---------------------------------------------
         glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
         glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT); // reset viewport
         glClear(GL_DEPTH_BUFFER_BIT);
@@ -288,12 +311,39 @@ main(int, char* argv[]) {
         render_scene_with_shader(objects, &simpleDepthShader, i_FRAME);
         // ------------------------------------------------------------
 
+        // Prerender Background----------------------------------------
+        //glDisable(GL_DEPTH_TEST);
+        //glBindFramebuffer(GL_FRAMEBUFFER, backgroundFBO);
+        //glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT); // reset viewport
+        //glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        //backgroundShader.use();
+        //backgroundShader.setVec2("uRes", glm::vec2(WINDOW_WIDTH, WINDOW_HEIGHT));
+        //backgroundShader.setMat4("view_mat", !useOrbital ? cam.viewMatrix() : orbitalCam.view_matrix());
+        //backgroundShader.setMat4("proj_mat", proj_matrix);
+        //backgroundShader.setVec3("viewPos", !useOrbital ? cam.position : orbitalCam.position());
+        //backgroundShader.setVec3("sunPos", lightPos);
+        //backgroundShader.setVec3("sunColor", lightColor);
+        //
+        //backgroundShader.setVec3("skyColor", skyColor[0], skyColor[1], skyColor[2]);
+        //backgroundShader.setVec3("fogColor", fogColor[0], fogColor[1], fogColor[2]);
+        //renderQuad();
+        //glEnable(GL_DEPTH_TEST);
+        // ------------------------------------------------------------
+
         glBindFramebuffer(GL_FRAMEBUFFER, postprocessing.framebufferA);
         //glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glClearColor(0.7f, 0.7f, 0.9f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // Background Rendering ---------------------------------------
+        //glDisable(GL_DEPTH_TEST);
+        //glActiveTexture(GL_TEXTURE1);
+        //glBindTexture(GL_TEXTURE_2D, background);
+        //backgroundDraw.use();
+        //backgroundDraw.setInt("backgroundTexture", 1);
+        //renderQuad();
+        //glEnable(GL_DEPTH_TEST);
         glDisable(GL_DEPTH_TEST);
         backgroundShader.use();
         backgroundShader.setVec2("uRes", glm::vec2(WINDOW_WIDTH, WINDOW_HEIGHT));
@@ -308,17 +358,18 @@ main(int, char* argv[]) {
         renderQuad();
         glEnable(GL_DEPTH_TEST);
         // ------------------------------------------------------------
-        
+
         // Second pass
         // set light uniforms
-        glActiveTexture(GL_TEXTURE9);
-        glBindTexture(GL_TEXTURE_3D, perlinNoiseID);
         glActiveTexture(GL_TEXTURE8);
         glBindTexture(GL_TEXTURE_2D, shadowDepthMap);
+        glActiveTexture(GL_TEXTURE9);
+        glBindTexture(GL_TEXTURE_3D, perlinNoiseID);
         shadow_shader.use();
         shadow_shader.setVec3("viewPos", !useOrbital ? cam.position : orbitalCam.position());
         shadow_shader.setFloat("minBias", minShadowBias);
         shadow_shader.setFloat("maxBias", maxShadowBias);
+        shadow_shader.setVec3("lightColor", lightColor);
         shadow_shader.setVec3("lightPos", lightPos);
         shadow_shader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
         shadow_shader.setInt("shadowMap", 8);
@@ -329,6 +380,7 @@ main(int, char* argv[]) {
         shadow_shader_unicol.setMat4("lightSpaceMatrix", lightSpaceMatrix);
         shadow_shader_unicol.setFloat("minBias", minShadowBias);
         shadow_shader_unicol.setFloat("maxBias", maxShadowBias);
+        shadow_shader_unicol.setVec3("lightColor", lightColor);
         shadow_shader_unicol.setInt("shadowMap", 8);
         shadow_shader_unicol.setInt("perlinNoise", 9);
 
@@ -349,12 +401,15 @@ main(int, char* argv[]) {
             glBindTexture(GL_TEXTURE_3D, perlinNoiseID);
             glActiveTexture(GL_TEXTURE3);
             glBindTexture(GL_TEXTURE_3D, worleyNoiseID);
+            glActiveTexture(GL_TEXTURE4);
+            glBindTexture(GL_TEXTURE_2D, background);
 
 
             pp_clouds.setInt("screenTexture", 0);
             pp_clouds.setInt("depthTexture", 1);
             pp_clouds.setInt("perlinNoise", 2);
             pp_clouds.setInt("worleyNoise", 3);
+            pp_clouds.setInt("backgroundTexture", 5);
 
             pp_clouds.setVec3("CloudOffset", CloudOffset[0], CloudOffset[1], CloudOffset[2]);
             pp_clouds.setFloat("CloudScale", CloudScale);
@@ -372,12 +427,24 @@ main(int, char* argv[]) {
             pp_clouds.setVec3("viewPos", !useOrbital ? cam.position : orbitalCam.position());
             pp_clouds.setMat4("view_mat", !useOrbital ? cam.viewMatrix() : orbitalCam.view_matrix());
             pp_clouds.setInt("frame", i_FRAME);
-            postprocessing.postprocess(RenderDirection::A_TO_SCR);
         }
         else {
             defaultPP.use();
-            postprocessing.postprocess(RenderDirection::A_TO_SCR);
         }
+        postprocessing.postprocess(RenderDirection::A_TO_SCR);
+
+        //pp_fog.use();
+        //
+        //glActiveTexture(GL_TEXTURE1);
+        //glBindTexture(GL_TEXTURE_2D, depthMap);
+        //
+        //pp_fog.setInt("screenTexture", 0);
+        //pp_fog.setInt("depthTexture", 1);
+        //pp_fog.setFloat("near", NEAR_VALUE);
+        //pp_fog.setFloat("far", FAR_VALUE);
+        //pp_fog.setVec3("fogColor", fogColor[0], fogColor[1], fogColor[2]);
+        //postprocessing.postprocess(RenderDirection::B_TO_SCR);
+
 
         // render Depth map to quad for visual debugging
         // ---------------------------------------------
@@ -443,9 +510,6 @@ main(int, char* argv[]) {
     glfwTerminate();
 }
 
-void genNoise(unsigned int )
-{
-}
 
 unsigned int quadVAO = 0;
 unsigned int quadVBO;

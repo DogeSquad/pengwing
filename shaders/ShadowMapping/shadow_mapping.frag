@@ -22,6 +22,7 @@ uniform float minBias;
 uniform float maxBias;
 
 uniform vec3 lightPos; 
+uniform vec3 lightColor;
 uniform vec3 viewPos;
 uniform Material material;
 
@@ -54,8 +55,7 @@ float ShadowCalculation(vec4 fragPosLightSpace, float dotNL)
 }
 
 void main()
-{
-    vec3 lightColor = vec3(0.9f, 0.9f, 0.8f);
+{    
     vec3 color = texture(material.texture_diffuse1, fs_in.TexCoords).rgb;
     vec3 lightDir = normalize(lightPos - fs_in.FragPos);
     vec3 normal = normalize(fs_in.Normal);

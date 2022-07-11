@@ -21,30 +21,38 @@ float gradFunc(float x)
     if (x < 0.0f) return 1.0f;
     return pow(cos(0.5f * M_PI * x), 12);
 }
+float greatCircleDistance(vec3 a, vec3 b)
+{
+    float euclideanDst = distance(a, b);
+    float angle = asin(euclideanDst * 0.5f);  // Assumed R is 1.0f
+
+    return acos(dot(a, b));
+
+    //return 2.0f * angle;
+}
 
 void main()
 {   
     vec2 pos = (gl_FragCoord.xy - vec2(uRes.xy) * 0.5f) / float(uRes.y);
-    //vec2 pos = 2.0f * vec2(gl_FragCoord.x / float(uRes.y), gl_FragCoord.y / float(uRes.x)) - vec2(1.0f);
+    vec3 world_pos = (inverse(view_mat) * vec4(vec3(pos.xy, -1.0f), 1.0f) /* * proj_mat * view_mat*/).xyz;
 
     vec3 rayPos = viewPos;
-    vec3 rayDir = (vec4(vec3(pos.xy, 1.0f), 0.0f) * proj_mat * view_mat).xyz;
+    vec3 rayDir = world_pos - viewPos;
     rayDir = normalize(rayDir);
+
     vec3 sunPos_norm = normalize(sunPos);
 
-    if (length(sunPos_norm - rayDir) < 0.1f) 
+    if (greatCircleDistance(sunPos_norm, rayDir) < 0.032f) 
     {
         FragColor = vec4(sunColor, 1.0f);
         return;
     }
 
     FragColor = vec4(mix(skyColor, fogColor, gradFunc(rayDir.y)), 1.0f);
-    //float sunPow = pow(max(0.0f, 4.0f * dot(rayDir, sunPos_norm) - 3.0f), 8);
-    //FragColor = mix(FragColor, vec4(sunColor, 1.0f), sunPow);
+    float sunPow = pow(max(0.0f, 13.0f * dot(rayDir, sunPos_norm) - 12.0f), 8);
+    FragColor = mix(FragColor, vec4(sunColor, 1.0f), sunPow);
 
     //FragColor += vec4(sunColor, 1.0f) * max(0.0f, dot(rayDir, normalize(sunPos)));
-
-
 
 
     // Ray Direction Debug

@@ -95,7 +95,7 @@ void main()
     FragColor = texture(screenTexture, TexCoords.xy);
 
     // Calculate Ray
-    vec2 pos = (gl_FragCoord.xy - vec2(uRes.xy) * 0.5f) / float(uRes.x);
+    vec2 pos = (gl_FragCoord.xy - vec2(uRes.xy) * 0.5f) / float(uRes.y);
 
     vec3 rayPos = viewPos;
     vec3 rayDir = (vec4(vec3(pos.xy, 1.0f), 0.0f) * proj_mat * view_mat).xyz;
@@ -132,6 +132,7 @@ void main()
             }
             dstTravelled += stepSize;
         }
-        FragColor = mix(vec4(CloudColor, 1.0f) * lightEnergy, FragColor, col_ramp(transmittance,0.1f, 0.9f,  0.0f, 1.0f));
+        FragColor = mix(vec4(CloudColor, 1.0f) * lightEnergy, FragColor, transmittance);
+        FragColor = max(vec4(CloudColor, 1.0f) * lightEnergy * transmittance, FragColor);
     }
 }
