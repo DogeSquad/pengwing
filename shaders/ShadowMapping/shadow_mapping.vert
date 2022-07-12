@@ -10,17 +10,11 @@ out VS_OUT {
     vec4 FragPosLightSpace;
 } vs_out;
 
-uniform sampler3D perlinNoise;
-
+uniform mat4 proj_mat;
 uniform mat4 model_mat;
 uniform mat4 view_mat;
-uniform mat4 proj_mat;
-
 uniform mat4 lightSpaceMatrix;
 
-float rand(vec2 co){
-    return fract(sin(dot(co, vec2(12.9898f, 78.233f))) * 43758.5453f);
-}
 void main()
 {    
     vs_out.FragPos = vec3(model_mat * vec4(aPos, 1.0));

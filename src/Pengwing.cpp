@@ -7,6 +7,7 @@
 #include "Camera.h"
 #include "Postprocessing.h"
 #include "Noise.h"
+#include "Penguin.h"
 
 #include <string>
 #include <chrono>
@@ -75,43 +76,28 @@ main(int, char* argv[]) {
 
     std::vector<Object*> objects = std::vector<Object*>();
     Shader shadow_shader("ShadowMapping/shadow_mapping.vert", "ShadowMapping/shadow_mapping.frag");
+    Shader shadow_shader_unicol("ShadowMapping/shadow_mapping.vert", "ShadowMapping/shadow_mapping_unicol.frag");
     objects.push_back(new Drache(shadow_shader, Model("backpack/backpack.obj", true), &scene_mat, "Backpack"));
     objects[0]->position = glm::vec3(0.0f, 0.0f, 0.0f);
     objects[0]->active = false;
-
-    Shader shadow_shader_unicol("ShadowMapping/shadow_mapping.vert", "ShadowMapping/shadow_mapping_unicol.frag");
+    
     objects.push_back(new Object(shadow_shader_unicol, Model("plane.obj", false), &scene_mat, "Plane"));
     objects[1]->scale = glm::vec3(200.0f, 1.0f, 200.0f);
     objects[1]->position = glm::vec3(0.0f, 0.0f, 0.0f);
     objects[1]->active = true;
     objects.push_back(new Drache(shadow_shader_unicol, Model("dragon.obj", true), &scene_mat, "Drache"));
-    objects[2]->active = true;
-
-    /*
-    Shader albedo_texture = Shader("basic_textured.vert", "basic_textured.frag");
-    Shader shader = Shader("basic_colors.vert", "basic_colors.frag");
-    Shader sunglasses_shader = Shader("basic_colors.vert", "basic_colors_black.frag");
-
-    {
-        objects.push_back(new Drache(shader, Model("dragon.obj", true), &scene_mat, "Drache"));
-        objects[0]->active = false;
-        objects.push_back(new Object(sunglasses_shader, Model("sunglasses/sunglasses.obj", true), &objects[0]->model_matrix, "Sunglasses"));
-        objects[1]->position = glm::vec3(-4.9f, 8.1f, -0.1f);
-        objects[1]->rotation = glm::vec4(0.0f, 1.0f, 0.0f, glm::half_pi<float>() + 0.4f);
-        objects[1]->scale = glm::vec3(19.0f, 19.0f, 19.0f);
-        objects[1]->active = false;
-    }
-
-    objects.push_back(new Object(shader, Model("plane.obj", false), &scene_mat, "Plane"));
-    objects[2]->scale = glm::vec3(10.0f, 1.0f, 10.0f);
-    objects[2]->position = glm::vec3(0.0f, 0.0f, 0.0f);
     objects[2]->active = false;
 
-    objects.push_back(new Drache(albedo_texture, Model("backpack/backpack.obj", true), &scene_mat, "Backpack"));
-    objects[3]->position = glm::vec3(0.0f, 0.0f, 0.0f);
+    objects.push_back(new Penguin(shadow_shader, Model("penguin/penguin.obj", true), &scene_mat, "Penguin"));
+    objects[3]->scale = glm::vec3(0.00001f);
+    objects[3]->position = glm::vec3(0.0f, 1.0f, 0.0f);
     objects[3]->active = true;
-    */
-    // ---------------------------------------------------
+
+
+    //objects.push_back(new Object(shadow_shader_unicol, Model("plane.obj", false), &scene_mat, "Plane"));
+    //objects[1]->scale = glm::vec3(200.0f, 1.0f, 200.0f);
+    //objects[1]->position = glm::vec3(0.0f, 0.0f, 0.0f);
+    //objects[1]->active = true;
     
     // Background ----------------------------------------------------
     Shader backgroundShader = Shader("simple.vert", "background.frag");
@@ -242,19 +228,19 @@ main(int, char* argv[]) {
     // ----------------------------------------------------------------
 
     // Anti-Aliasing --------------------------------------------------
-    // glEnable(GL_MULTISAMPLE);
-    // glEnable(GL_POLYGON_SMOOTH);
-    // glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    // glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
+    glEnable(GL_MULTISAMPLE);
+    //glEnable(GL_POLYGON_SMOOTH);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
     // ----------------------------------------------------------------
 
 
     // Lighting -------------------------------------------------------
-    glm::vec3 lightPos(0.0f, 1.0f, -1.0f);
-    glm::vec3 lightColor(0.98f, 0.98f, 0.89f);
+    glm::vec3 lightPos = glm::vec3(0.0f, 1.0f, 0.01f);
+    glm::vec3 lightColor = glm::vec3(0.9f, 0.9f, 0.89f);
     glm::mat4 lightProjection, lightView;
     glm::mat4 lightSpaceMatrix;
-    float near_plane = -1.0f, far_plane = 30.5f;
+    float near_plane = -20.0f, far_plane = 10.5f;
     lightProjection = glm::ortho<float>(-50.0f, 50.0f, -50.0f, 50.0f, near_plane, far_plane);
     lightView = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     lightSpaceMatrix = lightProjection * lightView;
@@ -269,6 +255,8 @@ main(int, char* argv[]) {
         glfwPollEvents();
 
         //lightPos.y = glm::sin(i_FRAME * 0.01f);
+
+
 
         if (!useOrbital) cam.update(i_FRAME);
         // First pass --> render to shadow-----------------------------

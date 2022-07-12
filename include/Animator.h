@@ -16,6 +16,9 @@ public:
 	static const unsigned int EASE_OUT_BOUNCE = 5;
 	static const unsigned int EASE_OUT_ELASTIC = 6;
 	static const unsigned int EASE_OUT_SHAKE = 7;
+	static const unsigned int EASE_IN_OUT_SINE = 8;
+	static const unsigned int EASE_IN_SINE = 9;
+	static const unsigned int EASE_OUT_SINE = 10;
 	struct Keyframe {
 		unsigned int frame;
 		glm::vec4 vector;

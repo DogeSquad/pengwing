@@ -1,0 +1,203 @@
+newmtl White Chest
+illum 7
+Kd 0.8 0.8 0.8
+adobe_interior_color 0.0508761 0.0508761 0.0508761
+Ni 1.6
+adobe_density 0
+Tr 0
+d 1
+Ka 0 0 0
+Ke 0 0 0
+Pm 0
+adobe_translucence 0
+Pr 0.272166
+Ns 16
+Ks 1 1 1
+adobe_glow 0
+
+newmtl Material.004
+illum 7
+Kd 0 0 0
+adobe_interior_color 0.0508761 0.0508761 0.0508761
+Ni 1.6
+adobe_density 0
+Tr 0
+d 1
+Ka 0 0 0
+Ke 0 0 0
+Pm 0
+adobe_translucence 0
+Pr 0.82853
+Ns 16
+Ks 1 1 1
+adobe_glow 0
+
+newmtl Material.002
+illum 7
+Kd 0 0 0
+adobe_interior_color 0.0508761 0.0508761 0.0508761
+Ni 1.6
+adobe_density 0
+Tr 0
+d 1
+Ka 0 0 0
+Ke 0 0 0
+Pm 0
+adobe_translucence 0
+Pr 0.272166
+Ns 16
+Ks 1 1 1
+adobe_glow 0
+
+newmtl orangefeet.001
+illum 7
+Kd 1 0.47449 0
+adobe_interior_color 0.0508761 0.0508761 0.0508761
+Ni 1.6
+adobe_density 0
+Tr 0
+d 1
+Ka 0 0 0
+Ke 0 0 0
+Pm 0
+adobe_translucence 0
+Pr 0.404326
+Ns 16
+Ks 1 1 1
+adobe_glow 0
+
+newmtl orangefeet
+illum 7
+Kd 1 0.181301 0.00921804
+adobe_interior_color 0.0508761 0.0508761 0.0508761
+Ni 1.6
+adobe_density 0
+Tr 0
+d 1
+Ka 0 0 0
+Ke 0 0 0
+Pm 0
+adobe_translucence 0
+Pr 0.404326
+Ns 16
+Ks 1 1 1
+adobe_glow 0
+
+newmtl orangefeet.003
+illum 7
+Kd 1 0.181301 0.00921804
+adobe_interior_color 0.0508761 0.0508761 0.0508761
+Ni 1.6
+adobe_density 0
+Tr 0
+d 1
+Ka 0 0 0
+Ke 0 0 0
+Pm 0
+adobe_translucence 0
+Pr 0.404326
+Ns 16
+Ks 1 1 1
+adobe_glow 0
+
+newmtl White Chest.001
+illum 7
+Kd 0.8 0.8 0.8
+adobe_interior_color 0.0508761 0.0508761 0.0508761
+Ni 1.6
+adobe_density 0
+Tr 0
+d 1
+Ka 0 0 0
+Ke 0 0 0
+Pm 0
+adobe_translucence 0
+Pr 0.272166
+Ns 16
+Ks 1 1 1
+adobe_glow 0
+
+newmtl Material.003
+illum 7
+Kd 0 0 0
+adobe_interior_color 0.0508761 0.0508761 0.0508761
+Ni 1.6
+adobe_density 0
+Tr 0
+d 1
+Ka 0 0 0
+Ke 0 0 0
+Pm 0
+adobe_translucence 0
+Pr 0.82853
+Ns 16
+Ks 1 1 1
+adobe_glow 0
+
+newmtl Material.001
+illum 7
+Kd 0 0 0
+adobe_interior_color 0.0508761 0.0508761 0.0508761
+Ni 1.6
+adobe_density 0
+Tr 0
+d 1
+Ka 0 0 0
+Ke 0 0 0
+Pm 0
+adobe_translucence 0
+Pr 0.272166
+Ns 16
+Ks 1 1 1
+adobe_glow 0
+
+newmtl orangefeet.005
+illum 7
+Kd 1 0.47449 0
+adobe_interior_color 0.0508761 0.0508761 0.0508761
+Ni 1.6
+adobe_density 0
+Tr 0
+d 1
+Ka 0 0 0
+Ke 0 0 0
+Pm 0
+adobe_translucence 0
+Pr 0.404326
+Ns 16
+Ks 1 1 1
+adobe_glow 0
+
+newmtl orangefeet.004
+illum 7
+Kd 1 0.181301 0.00921804
+adobe_interior_color 0.0508761 0.0508761 0.0508761
+Ni 1.6
+adobe_density 0
+Tr 0
+d 1
+Ka 0 0 0
+Ke 0 0 0
+Pm 0
+adobe_translucence 0
+Pr 0.404326
+Ns 16
+Ks 1 1 1
+adobe_glow 0
+
+newmtl orangefeet.002
+illum 7
+Kd 1 0.181301 0.00921804
+adobe_interior_color 0.0508761 0.0508761 0.0508761
+Ni 1.6
+adobe_density 0
+Tr 0
+d 1
+Ka 0 0 0
+Ke 0 0 0
+Pm 0
+adobe_translucence 0
+Pr 0.404326
+Ns 16
+Ks 1 1 1
+adobe_glow 0

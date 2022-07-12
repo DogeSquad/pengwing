@@ -15,10 +15,9 @@ uniform mat4 proj_mat;
 uniform vec3 viewPos;
 uniform vec3 sunPos;
 
-float gradFunc(float x) 
+float gradFunc(float y) 
 {
-    if (x < 0.0f) return 1.0f;
-    return pow(cos(0.5f * M_PI * x), 12);
+    return min(1.0f, (y - 1.0f) * (y - 1.0f) * (y - 1.0f) * (y - 1.0f));
 }
 float greatCircleDistance(vec3 a, vec3 b)
 {

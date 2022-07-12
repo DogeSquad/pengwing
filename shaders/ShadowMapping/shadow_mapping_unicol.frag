@@ -66,25 +66,25 @@ float getFogFactor(float d)
 
 void main()
 {
-    vec3 color = vec3(0.9f, 0.7f, 0.7f);
+    vec3 color = vec3(0.8f, 0.8f, 0.8f);
     vec3 normal = normalize(fs_in.Normal);
     // ambient
-    vec3 ambient = 0.3f * lightColor;
+    vec3 ambient = 0.15f * lightColor;
     // diffuse
-    vec3 lightDir = normalize(lightPos - fs_in.FragPos);
+    vec3 lightDir = normalize(lightPos);
     float diff = max(dot(lightDir, normal), 0.0f);
     vec3 diffuse = diff * lightColor;
     // specular
     vec3 viewDir = normalize(viewPos - fs_in.FragPos);
-    vec3 reflectDir = reflect(-lightDir, normal);
+    //vec3 reflectDir = reflect(-lightDir, normal);
     vec3 halfwayDir = normalize(lightDir + viewDir);  
     float spec = pow(max(dot(normal, halfwayDir), 0.0f), 64.0f);
+    spec *= 0.2f;
     vec3 specular = spec * lightColor;    
     // calculate shadow
     float shadow = ShadowCalculation(fs_in.FragPosLightSpace);                      
     vec3 lighting = (ambient + (1.0f - shadow) * (diffuse + specular)) * color;    
     
     FragColor = vec4(lighting, 1.0f);
-    FragColor = mix(FragColor, vec4(fogColor, 1.0f), pow(getFogFactor(distance(viewPos, fs_in.FragPos)), 3));
-    //FragColor = vec4(max(0.0f, dot(normal, normalize(lightPos))) * color, 1.0f);
+    FragColor = mix(FragColor, vec4(fogColor, 1.0f), pow(getFogFactor(distance(viewPos, fs_in.FragPos)), 5));
 } 

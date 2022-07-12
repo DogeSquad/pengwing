@@ -70,10 +70,9 @@ float getFogFactor(float d)
 void main()
 {    
     vec3 color = texture(material.texture_diffuse1, fs_in.TexCoords).rgb;
-    vec3 lightDir = normalize(lightPos - fs_in.FragPos);
+    vec3 lightDir = normalize(lightPos);
     vec3 normal = normalize(fs_in.Normal);
-    vec3 normalizedLightPos = normalize(lightPos);
-    float dotNL = dot(normalizedLightPos, normal);
+    float dotNL = dot(lightDir, normal);
 
     // ambient
     vec3 ambient = 0.15f * lightColor;
@@ -95,5 +94,5 @@ void main()
     vec3 lighting = (ambient + (1.0 - shadow) * (diffuse + specular)) * color;    
     
     FragColor = vec4(lighting, 1.0);
-    FragColor = mix(FragColor, vec4(fogColor, 1.0f), pow(getFogFactor(distance(viewPos, fs_in.FragPos)), 3));
+    FragColor = mix(FragColor, vec4(fogColor, 1.0f), pow(getFogFactor(distance(viewPos, fs_in.FragPos)), 5));
 } 

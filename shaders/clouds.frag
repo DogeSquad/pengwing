@@ -144,7 +144,6 @@ void main()
         }
         FragColor = mix(vec4(CloudColor, 1.0f), col, 1.0f - clamp(lightEnergy, 0.0f, 1.0f));
         FragColor = mix(FragColor, col, pow(getFogFactor(dstToBox), 3));
-        //FragColor = mix(col, vec4(skyColor, 1.0f), pow(getFogFactor(dstToBox), 3)); // Not working ):
     }
     else 
     {

@@ -22,6 +22,5 @@ public:
 	void destroy();
 	virtual void render(Shader* shader);
 	virtual void render(glm::mat4 view_mat, glm::mat4 proj_mat);
-	virtual void render(SceneData &scene_data);
 	virtual void update(unsigned int frame);
 };

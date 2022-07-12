@@ -13,10 +13,6 @@ glm::mat4 Camera::viewMatrix()
 {
     return glm::inverse(model_matrix);
 }
-void Camera::render(SceneData& scene_data)
-{
-
-}
 void Camera::update(unsigned int frame) 
 {
     this->rotation = this->rotationAnimator.updateVector(frame);
