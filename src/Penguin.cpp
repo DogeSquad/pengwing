@@ -9,9 +9,6 @@ Penguin::Penguin(Shader shader, Model model, glm::mat4* parent, const char* name
 	this->rotationAnimator = Animator(this->rotation);
 	this->scaleAnimator = Animator(glm::vec4(this->scale.x, this->scale.y, this->scale.z, 1.0f));
 	setupAnimation(&this->positionAnimator, &this->rotationAnimator, &this->scaleAnimator);
-	//setupPositionAnimation();
-	//setupRotationAnimation();
-	//setupScaleAnimation();
 }
 void Penguin::update(unsigned int frame)
 {
@@ -53,8 +50,8 @@ void waddle(unsigned int frameStart, unsigned int frameEnd, float height, glm::v
 	positionAnimator->AddKeyframe(frameStart + 3 * quarter_duration, initPos + glm::vec4(0.0f, height, 0.0f, 1.0f), Animator::EASE_OUT_SINE);
 	positionAnimator->AddKeyframe(frameEnd, initPos + glm::vec4(0.2f, 0.0f, 0.0f, 1.0f), Animator::EASE_IN_SINE);
 
-	rotationAnimator->AddKeyframe(frameStart + quarter_duration, glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), Animator::EASE_OUT_SINE);
-	rotationAnimator->AddKeyframe(frameStart + 2 * quarter_duration, glm::vec4(0.0f, 0.0f, 1.0f, 0.1f), Animator::EASE_IN_SINE);
-	rotationAnimator->AddKeyframe(frameStart + 3 * quarter_duration, glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), Animator::EASE_OUT_SINE);
-	rotationAnimator->AddKeyframe(frameEnd, glm::vec4(0.0f, 0.0f, 1.0f, -0.1f), Animator::EASE_IN_SINE);
+	rotationAnimator->AddKeyframe(frameStart + quarter_duration, glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), Animator::EASE_IN);
+	rotationAnimator->AddKeyframe(frameStart + 2 * quarter_duration, glm::vec4(0.0f, 0.0f, 1.0f, 0.1f), Animator::EASE_OUT);
+	rotationAnimator->AddKeyframe(frameStart + 3 * quarter_duration, glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), Animator::EASE_IN);
+	rotationAnimator->AddKeyframe(frameEnd, glm::vec4(0.0f, 0.0f, 1.0f, -0.1f), Animator::EASE_OUT);
 }

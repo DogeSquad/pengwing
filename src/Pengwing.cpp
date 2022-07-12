@@ -77,21 +77,30 @@ main(int, char* argv[]) {
     std::vector<Object*> objects = std::vector<Object*>();
     Shader shadow_shader("ShadowMapping/shadow_mapping.vert", "ShadowMapping/shadow_mapping.frag");
     Shader shadow_shader_unicol("ShadowMapping/shadow_mapping.vert", "ShadowMapping/shadow_mapping_unicol.frag");
-    objects.push_back(new Drache(shadow_shader, Model("backpack/backpack.obj", true), &scene_mat, "Backpack"));
-    objects[0]->position = glm::vec3(0.0f, 0.0f, 0.0f);
-    objects[0]->active = false;
+    //objects.push_back(new Drache(shadow_shader, Model("backpack/backpack.obj", true), &scene_mat, "Backpack"));
+    //objects[0]->position = glm::vec3(0.0f, 0.0f, 0.0f);
+    //objects[0]->active = false;
+    //
+    //objects.push_back(new Object(shadow_shader_unicol, Model("plane.obj", false), &scene_mat, "Plane"));
+    //objects[1]->scale = glm::vec3(200.0f, 1.0f, 200.0f);
+    //objects[1]->position = glm::vec3(0.0f, 0.0f, 0.0f);
+    //objects[1]->active = true;
+    //objects.push_back(new Drache(shadow_shader_unicol, Model("dragon.obj", true), &scene_mat, "Drache"));
+    //objects[2]->active = false;
+    //
+    //objects.push_back(new Penguin(shadow_shader, Model("penguin/penguin.obj", true), &scene_mat, "Penguin"));
+    //objects[3]->scale = glm::vec3(0.00001f);
+    //objects[3]->position = glm::vec3(0.0f, 1.0f, 0.0f);
+    //objects[3]->active = true;
     
     objects.push_back(new Object(shadow_shader_unicol, Model("plane.obj", false), &scene_mat, "Plane"));
-    objects[1]->scale = glm::vec3(200.0f, 1.0f, 200.0f);
-    objects[1]->position = glm::vec3(0.0f, 0.0f, 0.0f);
-    objects[1]->active = true;
-    objects.push_back(new Drache(shadow_shader_unicol, Model("dragon.obj", true), &scene_mat, "Drache"));
-    objects[2]->active = false;
-
+    objects[0]->scale = glm::vec3(200.0f, 1.0f, 200.0f);
+    objects[0]->position = glm::vec3(0.0f, 0.0f, 0.0f);
+    objects[0]->active = true;
     objects.push_back(new Penguin(shadow_shader, Model("penguin/penguin.obj", true), &scene_mat, "Penguin"));
-    objects[3]->scale = glm::vec3(0.00001f);
-    objects[3]->position = glm::vec3(0.0f, 1.0f, 0.0f);
-    objects[3]->active = true;
+    objects[1]->scale = glm::vec3(0.00001f);
+    objects[1]->position = glm::vec3(0.0f, 1.0f, 0.0f);
+    objects[1]->active = true;
 
 
     //objects.push_back(new Object(shadow_shader_unicol, Model("plane.obj", false), &scene_mat, "Plane"));
@@ -236,11 +245,13 @@ main(int, char* argv[]) {
 
 
     // Lighting -------------------------------------------------------
-    glm::vec3 lightPos = glm::vec3(0.0f, 1.0f, 0.01f);
+    float theta = 1.0f;
+    float azimuth = 0.8f;
+    glm::vec3 lightPos = glm::vec3(glm::sin(azimuth) * glm::cos(theta), glm::sin(azimuth) * glm::sin(theta), glm::cos(theta));
     glm::vec3 lightColor = glm::vec3(0.9f, 0.9f, 0.89f);
     glm::mat4 lightProjection, lightView;
     glm::mat4 lightSpaceMatrix;
-    float near_plane = -20.0f, far_plane = 10.5f;
+    float near_plane = -20.0f, far_plane = 50.5f;
     lightProjection = glm::ortho<float>(-50.0f, 50.0f, -50.0f, 50.0f, near_plane, far_plane);
     lightView = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     lightSpaceMatrix = lightProjection * lightView;
