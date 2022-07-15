@@ -82,8 +82,6 @@ bool play            = true;
 //
 //
 //// Landschaft
-//void setupModelTransformation(unsigned int&);
-//void setupProjectionTransformation(unsigned int&, int, int);
 //void createPlane(std::vector<int>& position, int xOffset, int yOffset, int height, int width, float heightMultiplier, float mapScale, unsigned int& program, unsigned int& plane_VAO);
 //void createWorldTerrain(int mapHeight, int mapWidth, float heightMultiplier, float mapScale, unsigned int& program, std::vector<unsigned int>& map_chunks, int numChunksVisible);
 //std::vector<float> generateNoiseMap(int offsetX, int offsetY, int chunkHeight, int chunkWidth);
@@ -405,7 +403,6 @@ main(int, char* argv[]) {
         shadow_shader_unicol.setFloat("near", NEAR_VALUE);
         shadow_shader_unicol.setFloat("far", FAR_VALUE);
         shadow_shader_unicol.setInt("shadowMap", 8);
-
 
 
         // Landschaft
