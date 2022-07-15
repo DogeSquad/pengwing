@@ -23,7 +23,7 @@ void setupAnimation(Animator *positionAnimator, Animator *rotationAnimator, Anim
 	// Setup Start
 	positionAnimator->AddKeyframe(0, glm::vec4(0.0f, 0.0f, 0.0f, 1.0f), Animator::HOLD);
 	rotationAnimator->AddKeyframe(0, glm::vec4(0.0f, 1.0f, 0.0f, 0.0f), Animator::HOLD);
-	scaleAnimator->AddKeyframe(0, glm::vec4(glm::vec3(0.05f), 1.0f), Animator::HOLD);
+	scaleAnimator->AddKeyframe(0, glm::vec4(glm::vec3(0.5f), 1.0f), Animator::HOLD);
 
 
 	positionAnimator->AddKeyframe(60, glm::vec4(0.2f, 0.0f, 0.0f, 1.0f), Animator::LINEAR);
@@ -36,7 +36,7 @@ void setupAnimation(Animator *positionAnimator, Animator *rotationAnimator, Anim
 
 	positionAnimator->AddKeyframe(1800, glm::vec4(0.0f, 0.0f, 0.0f, 1.0f), Animator::HOLD);
 	rotationAnimator->AddKeyframe(1800, glm::vec4(0.0f, 1.0f, 0.0f, 0.0f), Animator::HOLD);
-	scaleAnimator->AddKeyframe(1800, glm::vec4(glm::vec3(0.05f), 1.0f), Animator::HOLD);
+	scaleAnimator->AddKeyframe(1800, glm::vec4(glm::vec3(0.5f), 1.0f), Animator::HOLD);
 }
 
 void waddle(unsigned int frameStart, unsigned int frameEnd, float height, glm::vec4 initPos, Animator *positionAnimator, Animator *rotationAnimator)

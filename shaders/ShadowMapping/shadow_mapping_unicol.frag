@@ -22,11 +22,6 @@ uniform vec3 fogColor;
 uniform float minBias;
 uniform float maxBias;
 
-float linearize_depth(float d,float zNear,float zFar)
-{
-    float z_n = 2.0f * d - 1.0f;
-    return 2.0f * zNear * zFar / (zFar + zNear - z_n * (zFar - zNear));
-}
 float ShadowCalculation(vec4 fragPosLightSpace)
 {
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;

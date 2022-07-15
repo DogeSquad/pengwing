@@ -95,11 +95,11 @@ main(int, char* argv[]) {
     
     objects.push_back(new Object(shadow_shader_unicol, Model("plane.obj", false), &scene_mat, "Plane"));
     objects[0]->scale = glm::vec3(200.0f, 1.0f, 200.0f);
-    objects[0]->position = glm::vec3(0.0f, 0.0f, 0.0f);
+    objects[0]->position = glm::vec3(0.0f, -2.0f, 0.0f);
     objects[0]->active = true;
-    objects.push_back(new Penguin(shadow_shader, Model("penguin/penguin.obj", true), &scene_mat, "Penguin"));
-    objects[1]->scale = glm::vec3(0.00001f);
-    objects[1]->position = glm::vec3(0.0f, 1.0f, 0.0f);
+    objects.push_back(new Penguin(shadow_shader, Model("backpack/backpack.obj", true), &scene_mat, "Penguin"));
+    objects[1]->scale = glm::vec3(0.5f);
+    objects[1]->position = glm::vec3(0.0f, 0.0f, 0.0f);
     objects[1]->active = true;
 
 
@@ -338,11 +338,11 @@ main(int, char* argv[]) {
         // set light uniforms
         shadow_shader_unicol.use();
         shadow_shader_unicol.setVec3("viewPos", !useOrbital ? cam.position : orbitalCam.position());
-        shadow_shader_unicol.setVec3("lightPos", lightPos);
-        shadow_shader_unicol.setMat4("lightSpaceMatrix", lightSpaceMatrix);
         shadow_shader_unicol.setFloat("minBias", minShadowBias);
         shadow_shader_unicol.setFloat("maxBias", maxShadowBias);
         shadow_shader_unicol.setVec3("lightColor", lightColor);
+        shadow_shader_unicol.setVec3("lightPos", lightPos);
+        shadow_shader_unicol.setMat4("lightSpaceMatrix", lightSpaceMatrix);
         shadow_shader_unicol.setVec3("fogColor", fogColor[0], fogColor[1], fogColor[2]);
         shadow_shader_unicol.setFloat("near", NEAR_VALUE);
         shadow_shader_unicol.setFloat("far", FAR_VALUE);
