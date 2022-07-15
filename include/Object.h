@@ -17,6 +17,7 @@ public:
 	glm::vec4 rotation;
 	bool active;
 	const char* name;
+	Object();
 	Object(glm::mat4* parent, const char* name);
 	Object(Shader shader, Model model, glm::mat4* parent, const char* name);
 	void destroy();

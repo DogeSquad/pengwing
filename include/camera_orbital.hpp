@@ -3,6 +3,7 @@
 #include "common.hpp"
 
 struct camera_orbital {
+    camera_orbital();
     camera_orbital(GLFWwindow* window);
 
     virtual ~camera_orbital();
