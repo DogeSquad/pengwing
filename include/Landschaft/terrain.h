@@ -4,9 +4,10 @@
 //#include <vendor/imgui/imgui.h>
 //#include <vendor/imgui/imgui_impl_glfw.h>
 //#include <vendor/imgui/imgui_impl_opengl3.h>
+#include "common.hpp"
+#include <vector>
 #include <stdio.h>
 #include <iostream>
-#include "Landschaft/utils.h"
 
 class terrain {
 
@@ -19,9 +20,9 @@ public:
 	float mapScale;
 	std::vector<float> noiseMap;
 	glm::vec3* vertices;
-	GLfloat* normals;
+	float* normals;
 	int* triangles; // Contains indices of vertices
-	GLfloat* finalArr;
+	float* finalArr;
 
 	terrain(std::vector<int> pos, int h, int w, float hm, float ms, std::vector<float> nm) {
 		position = pos;
@@ -83,11 +84,11 @@ public:
 
 	}
 
-	GLfloat* getTrianglePoints() {
+	float* getTrianglePoints() {
 
 		getVertices(height, width);
 
-		finalArr = new GLfloat[getTriangleVerticesCount(height, width) * 3];
+		finalArr = new float[getTriangleVerticesCount(height, width) * 3];
 		int triangleIndex = 0;
 		int pointIndex = 0;
 
@@ -110,9 +111,9 @@ public:
 
 	//Call after getTrianglePoints makes updated to vec3 normals
 	//Seg Fault
-	GLfloat* getNormals(int height, int width) {
+	float* getNormals(int height, int width) {
 
-		normals = new GLfloat[getTriangleVerticesCount(height, width) * 3];
+		normals = new float[getTriangleVerticesCount(height, width) * 3];
 		int normalIndex = 0; // Keep track of vertex
 		int triangleIndex = 0; //keep track of triangle
 		glm::vec3 normal;
