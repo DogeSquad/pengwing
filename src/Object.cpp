@@ -1,4 +1,15 @@
 #include "Object.h"
+Object::Object()
+{
+    this->name = "-";
+    this->shader = Shader();
+    this->model = Model();
+    this->active = true;
+    this->parent = nullptr;
+    this->position = glm::vec3(0.0f);
+    this->rotation = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
+    this->scale = glm::vec3(1.0f);
+}
 Object::Object(glm::mat4* parent, const char* name)
 {
     this->name = name;

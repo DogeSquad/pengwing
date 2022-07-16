@@ -165,7 +165,26 @@ scroll(int delta) {
     if (state->radius < 0.001f) state->radius = 0.001f;
     update();
 }
+camera_orbital::camera_orbital() {
+    state = new camera_state({});
 
+    state->last_x = 0;
+    state->last_y = 0;
+    state->drag_start_x = 0;
+    state->drag_start_y = 0;
+    state->left_down = false;
+    state->middle_down = false;
+    state->right_down = false;
+    state->dragging = false;
+
+    state->look_at = glm::vec3(0.f);
+    state->phi = 0.f;
+    state->theta = 0.f;
+    state->radius = 5.f;
+
+    state->view_mat = glm::identity<glm::mat4>();
+    update();
+}
 camera_orbital::camera_orbital(GLFWwindow* window) {
     state = new camera_state({});
 
