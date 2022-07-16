@@ -25,7 +25,7 @@ constexpr float ASPECT_RATIO = static_cast<float>(WINDOW_WIDTH) / static_cast<fl
 // Camera Settings
 const float FOV        = 45.0f;
 const float NEAR_VALUE = 0.1f;
-const float FAR_VALUE  = 150.0f;
+const float FAR_VALUE  = 300.0f;
 bool useOrbital        = true;
 
 // GUI Settings
@@ -42,7 +42,7 @@ bool play            = true;
 
 // Landschaft ------------------------------------------------------------
 //Perlin noise 
-int octaves = 7; // Number of overlapping perlin maps
+int octaves = 5; // Number of overlapping perlin maps
 float persistence = 0.5f; // Persistence --> Decrease in amplitude of octaves
 float lacunarity = 2.0f; // Lacunarity  --> Increase in frequency of octaves
 float noiseScale = 64.0f; //Scale of the obtained map
@@ -104,8 +104,8 @@ main(int, char* argv[]) {
     //map generation
     int mapHeight = 128; //Height of each chunk
     int mapWidth = 128; //Width of each chunk
-    float heightMultiplier = 75.0f; //Scale for height of peak
-    float mapScale = 1.0f; //Scale for height and breadth of each chunk
+    float heightMultiplier = 6.0f; //Scale for height of peak
+    float mapScale = 2.0f; //Scale for height and breadth of each chunk
     std::vector<GLuint> map_chunks(terrainXChunks * terrainYChunks);
 
     GLFWwindow* window = initOpenGL(WINDOW_WIDTH, WINDOW_HEIGHT,"Pengwing");
@@ -115,7 +115,6 @@ main(int, char* argv[]) {
 
     if (enableGUI) init_imgui(window);
 
-    //camera_orbital cam(window);
     proj_matrix = glm::perspective(FOV, float(WINDOW_WIDTH)/float(WINDOW_HEIGHT), NEAR_VALUE, FAR_VALUE);
 
     // Loading Objects ----------------------------------
@@ -146,9 +145,9 @@ main(int, char* argv[]) {
     //objects[0]->position = glm::vec3(0.0f, -2.0f, 0.0f);
     //objects[0]->active = true;
 
-    objects.push_back(new Penguin(shadow_shader, Model("penguin/penguin.obj", true), &scene_mat, "Penguin"));
-    objects[0]->scale = glm::vec3(0.5f);
-    objects[0]->position = glm::vec3(0.0f, 0.0f, 0.0f);
+    objects.push_back(new Object(shadow_shader_unicol, Model("plane.obj", false), &scene_mat, "Water"));
+    objects[0]->scale = glm::vec3(400.0f, 1.0f, 200.0f);
+    objects[0]->position = glm::vec3(0.0f, 1.0f, 0.0f);
     objects[0]->active = true;
     objects.push_back(new Object(shadow_shader_unicol, Model("cannon/cannon.obj", false), &scene_mat, "Cannon"));
     objects[1]->scale = 2.0f * glm::vec3(1.0f, 1.0f, 1.0f);
@@ -177,7 +176,7 @@ main(int, char* argv[]) {
     // Landschaft
     Shader landschaftShader = Shader("Landschaft/landschaft.vert", "Landschaft/landschaft.frag");
     setupModelTransformation(landschaftShader.ID);
-    landschaftShader.setMat4("vProjection", proj_matrix);
+    landschaftShader.setMat4("proj_mat", proj_matrix);
 
 
     // Background ----------------------------------------------------
@@ -437,11 +436,15 @@ main(int, char* argv[]) {
         if (!useOrbital) render_scene(objects, &cam, i_FRAME);
         else render_scene(objects, &orbitalCam, i_FRAME);
 
-        createWorldTerrain(mapHeight, mapWidth, heightMultiplier, mapScale, landschaftShader.ID, map_chunks, numChunksVisible, !useOrbital ? cam.position : orbitalCam.position());
+        createWorldTerrain(mapHeight, mapWidth, heightMultiplier, mapScale, shadow_shader_unicol.ID, map_chunks, numChunksVisible, !useOrbital ? cam.position : orbitalCam.position());
         landschaftShader.use();
-        landschaftShader.setMat4("vView", !useOrbital ? cam.viewMatrix() : orbitalCam.view_matrix());
+        landschaftShader.setMat4("view_mat", !useOrbital ? cam.viewMatrix() : orbitalCam.view_matrix());
         landschaftShader.setVec3("camPosition", !useOrbital ? cam.position : orbitalCam.position());
-        landschaftShader.use();
+
+        shadow_shader_unicol.use();
+        setupModelTransformation(shadow_shader_unicol.ID);
+        shadow_shader_unicol.setMat4("proj_mat", proj_matrix);
+        shadow_shader_unicol.setMat4("view_mat", !useOrbital ? cam.viewMatrix() : orbitalCam.view_matrix());
         for (int i = 0; i < terrainXChunks * terrainYChunks; i++) {
             //std::cout << i << " " << map_chunks[i] << std::endl;
             glBindVertexArray(map_chunks[i]);
@@ -586,6 +589,8 @@ std::vector<float> generateNoiseMap(int offsetX, int offsetY, int chunkHeight, i
 
                 float perlinValue = getPerlinNoise(xSample, ySample);
                 noiseHeight += perlinValue * amp;
+                noiseHeight += (0.5f * glm::tanh(0.5f * xSample) + 0.55f);
+                noiseHeight -= 0.7f;
 
                 // Lacunarity erhöht die Fräquenz der Oktaven
                 amp *= persistence;
@@ -857,9 +862,9 @@ void setupModelTransformation(unsigned int& program)
 
     //Pass on the modelling matrix to the vertex shader
     glUseProgram(program);
-    int vModel_uniform = glGetUniformLocation(program, "vModel");
+    int vModel_uniform = glGetUniformLocation(program, "model_mat");
     if (vModel_uniform == -1) {
-        fprintf(stderr, "Could not bind location: vModel\n");
+        fprintf(stderr, "Could not bind location: model\n");
         exit(0);
     }
     glUniformMatrix4fv(vModel_uniform, 1, GL_FALSE, glm::value_ptr(model));

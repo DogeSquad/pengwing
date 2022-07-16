@@ -21,20 +21,20 @@ void Penguin::update(unsigned int frame)
 void setupAnimation(Animator *positionAnimator, Animator *rotationAnimator, Animator *scaleAnimator)
 {
 	// Setup Start
-	positionAnimator->AddKeyframe(0, glm::vec4(0.0f, 0.0f, 0.0f, 1.0f), Animator::HOLD);
+	positionAnimator->AddKeyframe(0, glm::vec4(0.0f, 5.0f, 0.0f, 1.0f), Animator::HOLD);
 	rotationAnimator->AddKeyframe(0, glm::vec4(0.0f, 1.0f, 0.0f, 0.0f), Animator::HOLD);
 	scaleAnimator->AddKeyframe(0, glm::vec4(glm::vec3(0.8f), 1.0f), Animator::HOLD);
 
 
-	positionAnimator->AddKeyframe(60, glm::vec4(0.2f, 0.0f, 0.0f, 1.0f), Animator::LINEAR);
+	positionAnimator->AddKeyframe(60, glm::vec4(0.2f, 5.0f, 0.0f, 1.0f), Animator::LINEAR);
 	rotationAnimator->AddKeyframe(60, glm::vec4(0.0f, 0.0f, 1.0f, -0.2f), Animator::HOLD);
-	waddle( 60, 120, 0.5f, glm::vec4(0.0f), positionAnimator, rotationAnimator);
-	waddle(120, 180, 0.5f, glm::vec4(0.0f), positionAnimator, rotationAnimator);
-	waddle(180, 240, 0.5f, glm::vec4(0.0f), positionAnimator, rotationAnimator);
-	waddle(240, 300, 0.5f, glm::vec4(0.0f), positionAnimator, rotationAnimator);
+	waddle( 60, 120, 0.5f, glm::vec4(0.2f, 5.0f, 0.0f, 1.0f), positionAnimator, rotationAnimator);
+	waddle(120, 180, 0.5f, glm::vec4(0.2f, 5.0f, 0.0f, 1.0f), positionAnimator, rotationAnimator);
+	waddle(180, 240, 0.5f, glm::vec4(0.2f, 5.0f, 0.0f, 1.0f), positionAnimator, rotationAnimator);
+	waddle(240, 300, 0.5f, glm::vec4(0.2f, 5.0f, 0.0f, 1.0f), positionAnimator, rotationAnimator);
 
 
-	positionAnimator->AddKeyframe(1800, glm::vec4(0.0f, 0.0f, 0.0f, 1.0f), Animator::HOLD);
+	positionAnimator->AddKeyframe(1800, glm::vec4(0.0f, 5.0f, 0.0f, 1.0f), Animator::HOLD);
 	rotationAnimator->AddKeyframe(1800, glm::vec4(0.0f, 1.0f, 0.0f, 0.0f), Animator::HOLD);
 	scaleAnimator->AddKeyframe(1800, glm::vec4(glm::vec3(0.8f), 1.0f), Animator::HOLD);
 }

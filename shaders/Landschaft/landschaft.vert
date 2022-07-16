@@ -3,9 +3,9 @@
 layout (location = 0) in vec3 vVertex;
 layout (location = 1) in vec3 vColor;
 layout (location = 2) in vec3 vNormal;
-uniform mat4 vModel;
-uniform mat4 vView;
-uniform mat4 vProjection;
+uniform mat4 model_mat;
+uniform mat4 view_mat;
+uniform mat4 proj_mat;
 uniform vec3 camPosition;
 
 vec3 lpos_world = vec3(0.0f, 2000.0f, 0.0f);
@@ -29,7 +29,7 @@ vec3 totLight;
 out vec3 fColor;
 
 void main() {
-	gl_Position = vProjection * vView * vModel * vec4(vVertex, 1.0);
+	gl_Position = proj_mat * view_mat * model_mat * vec4(vVertex, 1.0);
 	pos_reduced = vec3(gl_Position[0], gl_Position[1], gl_Position[2]);
 
 	//Diffuse Light

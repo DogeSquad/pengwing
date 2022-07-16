@@ -17,15 +17,6 @@ Camera::Camera(glm::mat4* parent, const char* name) : Object::Object(parent, nam
     setupRotationAnimation(&this->rotationAnimator);
     setupPositionAnimation(&this->positionAnimator);
 }
-Camera::Camera(glm::mat4* parent, const char* name) : Object::Object(parent, name)
-{   
-    this->position = glm::vec3(0.0f, 3.0f, 10.0f);
-    this->rotation = glm::vec4(1.0001f, 0.0f, 0.0f, -0.05f * glm::half_pi<float>());
-    this->rotationAnimator = Animator();
-    this->positionAnimator = Animator();
-    setupRotationAnimation(&this->rotationAnimator);
-    setupPositionAnimation(&this->positionAnimator);
-}
 glm::mat4 Camera::viewMatrix()
 {
     return glm::inverse(model_matrix);
