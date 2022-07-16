@@ -97,11 +97,24 @@ main(int, char* argv[]) {
     objects[0]->scale = glm::vec3(200.0f, 1.0f, 200.0f);
     objects[0]->position = glm::vec3(0.0f, 0.0f, 0.0f);
     objects[0]->active = true;
-    objects.push_back(new Penguin(shadow_shader, Model("penguin/penguin.obj", true), &scene_mat, "Penguin"));
-    objects[1]->scale = glm::vec3(0.00001f);
-    objects[1]->position = glm::vec3(0.0f, 1.0f, 0.0f);
+    objects.push_back(new Object(shadow_shader_unicol, Model("cannon/cannon.obj", false), &scene_mat, "Cannon"));
+    objects[1]->scale = 2.0f * glm::vec3(1.0f, 1.0f, 1.0f);
+    objects[1]->position = glm::vec3(12.0f, 2.0f, 6.0f);
     objects[1]->active = true;
 
+
+    objects.push_back(new Penguin(shadow_shader_unicol, Model("penguin/penguinunwinged.obj", true), &scene_mat, "Penguin"));
+    objects[2]->position = glm::vec3(0.0f, 1.0f, 0.0f);
+    objects[2]->active = true;
+    objects.push_back(new Object(shadow_shader_unicol, Model("penguin/penguinunwingedwing.obj", false), &objects[2]->model_matrix, "Penguin Right Arm"));
+    objects[3]->scale = 0.8f * glm::vec3(1.0f, 1.0f, 1.0f);
+    objects[3]->position = glm::vec3(0.3f, 1.0f, 0.0f);
+    objects[3]->active = true;
+    objects.push_back(new Object(shadow_shader_unicol, Model("penguin/penguinunwingedwing.obj", false), &objects[2]->model_matrix, "Penguin Left Arm"));
+    objects[4]->scale = 0.8f * glm::vec3(1.0f, 1.0f, 1.0f);
+    objects[4]->rotation = glm::vec4(0.0f, 1.0f, 0.0f, glm::pi<float>());
+    objects[4]->position = glm::vec3(2.0f, 1.0f, 0.0f);
+    objects[4]->active = true;
 
     //objects.push_back(new Object(shadow_shader_unicol, Model("plane.obj", false), &scene_mat, "Plane"));
     //objects[1]->scale = glm::vec3(200.0f, 1.0f, 200.0f);
