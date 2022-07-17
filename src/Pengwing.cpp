@@ -146,7 +146,7 @@ main(int, char* argv[]) {
     //objects[0]->active = true;
 
     objects.push_back(new Object(shadow_shader_unicol, Model("plane.obj", false), &scene_mat, "Water"));
-    objects[0]->scale = glm::vec3(400.0f, 1.0f, 200.0f);
+    objects[0]->scale = glm::vec3(200.0f, 1.0f, 400.0f);
     objects[0]->position = glm::vec3(0.0f, 1.0f, 0.0f);
     objects[0]->active = true;
     objects.push_back(new Object(shadow_shader_unicol, Model("cannon/cannon.obj", false), &scene_mat, "Cannon"));
@@ -177,6 +177,20 @@ main(int, char* argv[]) {
     Shader landschaftShader = Shader("Landschaft/landschaft.vert", "Landschaft/landschaft.frag");
     setupModelTransformation(landschaftShader.ID);
     landschaftShader.setMat4("proj_mat", proj_matrix);
+
+    int width, height, nrChannels;
+    unsigned char* data = stbi_load((DATA_ROOT + std::string("crusted_snow.png")).c_str(), & width, & height, & nrChannels, 0);
+    unsigned int landschaftTexture;
+    glGenTextures(1, &landschaftTexture);
+    glBindTexture(GL_TEXTURE_2D, landschaftTexture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    glGenerateMipmap(GL_TEXTURE_2D);
+    stbi_image_free(data);
+
 
 
     // Background ----------------------------------------------------
@@ -336,10 +350,6 @@ main(int, char* argv[]) {
     while (glfwWindowShouldClose(window) == false) {
         start = std::chrono::system_clock::now();
 
-        //lightPos.y = glm::sin(i_FRAME * 0.01f);
-
-
-
         if (!useOrbital) cam.update(i_FRAME);
         // First pass --> render to shadow-----------------------------
         glBindFramebuffer(GL_FRAMEBUFFER, shadowDepthMapFBO);
@@ -437,14 +447,25 @@ main(int, char* argv[]) {
         else render_scene(objects, &orbitalCam, i_FRAME);
 
         createWorldTerrain(mapHeight, mapWidth, heightMultiplier, mapScale, shadow_shader_unicol.ID, map_chunks, numChunksVisible, !useOrbital ? cam.position : orbitalCam.position());
-        landschaftShader.use();
-        landschaftShader.setMat4("view_mat", !useOrbital ? cam.viewMatrix() : orbitalCam.view_matrix());
-        landschaftShader.setVec3("camPosition", !useOrbital ? cam.position : orbitalCam.position());
 
-        shadow_shader_unicol.use();
-        setupModelTransformation(shadow_shader_unicol.ID);
-        shadow_shader_unicol.setMat4("proj_mat", proj_matrix);
-        shadow_shader_unicol.setMat4("view_mat", !useOrbital ? cam.viewMatrix() : orbitalCam.view_matrix());
+        landschaftShader.use();
+        setupModelTransformation(landschaftShader.ID);
+        landschaftShader.setMat4("proj_mat", proj_matrix);
+        landschaftShader.setMat4("view_mat", !useOrbital ? cam.viewMatrix() : orbitalCam.view_matrix());
+        landschaftShader.setVec3("viewPos", !useOrbital ? cam.position : orbitalCam.position());
+        landschaftShader.setFloat("minBias", minShadowBias);
+        landschaftShader.setFloat("maxBias", maxShadowBias);
+        landschaftShader.setVec3("lightColor", lightColor);
+        landschaftShader.setVec3("lightPos", lightPos);
+        landschaftShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
+        landschaftShader.setVec3("fogColor", fogColor[0], fogColor[1], fogColor[2]);
+        landschaftShader.setFloat("near", NEAR_VALUE);
+        landschaftShader.setFloat("far", FAR_VALUE);
+        landschaftShader.setInt("shadowMap", 8);        
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, landschaftTexture);
+        landschaftShader.setInt("texture_snow", 0);
+
         for (int i = 0; i < terrainXChunks * terrainYChunks; i++) {
             //std::cout << i << " " << map_chunks[i] << std::endl;
             glBindVertexArray(map_chunks[i]);

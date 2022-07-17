@@ -1,61 +1,25 @@
 #version 330 core
+layout (location = 0) in vec3 aPos;
+layout (location = 1) in vec3 aNormal;
+layout (location = 2) in vec2 aTexCoords;
 
-layout (location = 0) in vec3 vVertex;
-layout (location = 1) in vec3 vColor;
-layout (location = 2) in vec3 vNormal;
+out VS_OUT {
+    vec3 FragPos;
+    vec3 Normal;
+    vec2 TexCoords;
+    vec4 FragPosLightSpace;
+} vs_out;
+
+uniform mat4 proj_mat;
 uniform mat4 model_mat;
 uniform mat4 view_mat;
-uniform mat4 proj_mat;
-uniform vec3 camPosition;
+uniform mat4 lightSpaceMatrix;
 
-vec3 lpos_world = vec3(0.0f, 2000.0f, 0.0f);
-vec3 worldOrigin = vec3(0.0f, 0.0f, 0.0f);
-
-vec3 diffLight;
-float diffLightCoeff;
-vec3 lightVector;
-
-vec3 positionVector;
-vec3 pos_reduced;
-vec3 reflectedVector;
-vec3 viewVector;
-
-vec3 specLight;
-float specLightCoeff;
-float shininessCoeff;
-
-vec3 totLight;
-
-out vec3 fColor;
-
-void main() {
-	gl_Position = proj_mat * view_mat * model_mat * vec4(vVertex, 1.0);
-	pos_reduced = vec3(gl_Position[0], gl_Position[1], gl_Position[2]);
-
-	//Diffuse Light
-	diffLightCoeff = 1.0f;
-	lightVector = normalize(pos_reduced - lpos_world);
-	diffLight = vec3(1.0f, 1.0f, 1.0f);
-	diffLight = diffLightCoeff * max(dot(lightVector, vNormal), 0.0f) * diffLight;
-
-	//Specular Light
-	reflectedVector = (2 * dot(lightVector, vNormal) * vNormal) - lightVector;
-	reflectedVector = normalize(reflectedVector);
-	viewVector = normalize(camPosition - pos_reduced);
-	specLightCoeff = 0.2f;
-	shininessCoeff = 64.0f;
-	specLight = vec3(1.0f, 1.0f, 1.0f);
-	specLight = specLightCoeff * max(pow(dot(reflectedVector,viewVector), shininessCoeff), 0.0f) * specLight;
-
-	totLight = diffLight + specLight;
-
-	//Calculate fog
-	float fogCoord = abs(distance(camPosition, vVertex)) / 5;
-	float fogDensity = 0.04f;
-	float fogIntensity = exp(-fogDensity*fogCoord);
-	fogIntensity = 1.0-clamp(fogIntensity, 0.0, 1.0);
-	vec3 fogColor = vec3(0.7f, 0.7f, 0.7f);
-
-	fColor = mix(vColor * totLight, fogColor, fogIntensity); //Interpolate color
-
+void main()
+{    
+    vs_out.FragPos = vec3(model_mat * vec4(aPos, 1.0));
+    vs_out.Normal = transpose(inverse(mat3(model_mat))) * aNormal;
+    vs_out.TexCoords = aTexCoords;
+    vs_out.FragPosLightSpace = lightSpaceMatrix * vec4(vs_out.FragPos, 1.0f);
+    gl_Position = proj_mat * view_mat * vec4(vs_out.FragPos, 1.0f);
 }
