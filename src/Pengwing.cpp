@@ -8,6 +8,8 @@
 #include "Postprocessing.h"
 #include "Noise.h"
 #include "Penguin.h"
+#include "PenguinNode.h"
+#include "PenguinWings.h"
 
 #include "perlin.h"
 #include "terrain.h"
@@ -26,7 +28,7 @@ constexpr float ASPECT_RATIO = static_cast<float>(WINDOW_WIDTH) / static_cast<fl
 const float FOV        = 45.0f;
 const float NEAR_VALUE = 0.1f;
 const float FAR_VALUE  = 300.0f;
-bool useOrbital        = true;
+bool useOrbital        = false;
 
 // GUI Settings
 bool enableGUI            = true;
@@ -145,28 +147,37 @@ main(int, char* argv[]) {
     //objects[0]->position = glm::vec3(0.0f, -2.0f, 0.0f);
     //objects[0]->active = true;
 
-    objects.push_back(new Object(shadow_shader_unicol, Model("plane.obj", false), &scene_mat, "Water"));
-    objects[0]->scale = glm::vec3(200.0f, 1.0f, 400.0f);
+    Shader waterShader("basic_colors.vert", "basic_colors.frag");
+    waterShader.use();
+    waterShader.setVec3("color", glm::vec3(0.2f, 0.25f, 0.8f));
+
+    objects.push_back(new Object(waterShader, Model("plane.obj", false), &scene_mat, "Water"));
+    objects[0]->scale = glm::vec3(700.0f, 1.0f, 1000.0f);
     objects[0]->position = glm::vec3(0.0f, 1.0f, 0.0f);
     objects[0]->active = true;
     objects.push_back(new Object(shadow_shader_unicol, Model("cannon/cannon.obj", false), &scene_mat, "Cannon"));
     objects[1]->scale = 2.0f * glm::vec3(1.0f, 1.0f, 1.0f);
-    objects[1]->position = glm::vec3(12.0f, 2.0f, 6.0f);
+    objects[1]->position = glm::vec3(23.0f, 4.0f, 2.0f);
+    objects[1]->rotation = glm::vec4(0.0f, 1.0f, 0.0f, glm::pi<float>() + 0.3f);
     objects[1]->active = true;
 
-
-    objects.push_back(new Penguin(shadow_shader_unicol, Model("penguin/penguinunwinged.obj", true), &scene_mat, "Penguin"));
-    objects[2]->position = glm::vec3(0.0f, 1.0f, 0.0f);
-    objects[2]->active = true;
-    objects.push_back(new Object(shadow_shader_unicol, Model("penguin/penguinunwingedwing.obj", false), &objects[2]->model_matrix, "Penguin Right Arm"));
-    objects[3]->scale = 0.8f * glm::vec3(1.0f, 1.0f, 1.0f);
-    objects[3]->position = glm::vec3(0.3f, 1.0f, 0.0f);
+    objects.push_back(new PenguinNode(&scene_mat, "PenguinNode"));
+    objects.push_back(new Penguin(shadow_shader_unicol, Model("penguin/penguinunwinged.obj", true), &objects[2]->model_matrix, "Penguin"));
+    objects[3]->position = glm::vec3(0.0f, 1.0f, 0.0f);
     objects[3]->active = true;
-    objects.push_back(new Object(shadow_shader_unicol, Model("penguin/penguinunwingedwing.obj", false), &objects[2]->model_matrix, "Penguin Left Arm"));
-    objects[4]->scale = 0.8f * glm::vec3(1.0f, 1.0f, 1.0f);
-    objects[4]->rotation = glm::vec4(0.0f, 1.0f, 0.0f, glm::pi<float>());
-    objects[4]->position = glm::vec3(2.0f, 1.0f, 0.0f);
-    objects[4]->active = true;
+
+    objects.push_back(new PenguinWings(&objects[3]->model_matrix, "PenguinWings"));
+
+
+    objects.push_back(new Object(shadow_shader_unicol, Model("penguin/penguinunwingedwing.obj", false), &objects[4]->model_matrix, "Penguin Right Arm"));
+    objects[5]->scale = 0.8f * glm::vec3(1.0f, 1.0f, 1.0f);
+    objects[5]->position = glm::vec3(0.3f, 0.0f, 0.0f);
+    objects[5]->active = true;
+    objects.push_back(new Object(shadow_shader_unicol, Model("penguin/penguinunwingedwing.obj", false), &objects[4]->model_matrix, "Penguin Left Arm"));
+    objects[6]->scale = 0.8f * glm::vec3(1.0f, 1.0f, 1.0f);
+    objects[6]->rotation = glm::vec4(0.0f, 1.0f, 0.0f, glm::pi<float>());
+    objects[6]->position = glm::vec3(2.0f, 0.0f, 0.0f);
+    objects[6]->active = true;
 
     //objects.push_back(new Object(shadow_shader_unicol, Model("plane.obj", false), &scene_mat, "Plane"));
     //objects[1]->scale = glm::vec3(200.0f, 1.0f, 200.0f);
@@ -282,8 +293,8 @@ main(int, char* argv[]) {
     pp_clouds.setFloat("far", FAR_VALUE);
     pp_clouds.setVec2("uRes", glm::vec2(WINDOW_WIDTH, WINDOW_HEIGHT));
 
-    glm::vec3 cloud_boundsMin(-1000.0f, 50.0f, -1000.0f);
-    glm::vec3 cloud_boundsMax( 1000.0f, 55.0f,  1000.0f);
+    glm::vec3 cloud_boundsMin(-1000.0f, 60.0f, -1000.0f);
+    glm::vec3 cloud_boundsMax( 1000.0f, 80.0f,  1000.0f);
     pp_clouds.setVec3("boundsMin", cloud_boundsMin);
     pp_clouds.setVec3("boundsMax", cloud_boundsMax);
 
@@ -330,13 +341,14 @@ main(int, char* argv[]) {
 
 
     // Lighting -------------------------------------------------------
-    float theta = 1.0f;
-    float azimuth = 0.8f;
+    float theta = 1.9f;
+    float azimuth = 2.3f;
     glm::vec3 lightPos = glm::vec3(glm::sin(azimuth) * glm::cos(theta), glm::sin(azimuth) * glm::sin(theta), glm::cos(theta));
+    lightPos = glm::vec3(-1.0f, 1.0f, -1.0f);
     glm::vec3 lightColor = glm::vec3(0.9f, 0.9f, 0.89f);
     glm::mat4 lightProjection, lightView;
     glm::mat4 lightSpaceMatrix;
-    float near_plane = -20.0f, far_plane = 50.5f;
+    float near_plane = -10.0f, far_plane = 50.5f;
     lightProjection = glm::ortho<float>(-50.0f, 50.0f, -50.0f, 50.0f, near_plane, far_plane);
     lightView = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     lightSpaceMatrix = lightProjection * lightView;
@@ -432,6 +444,8 @@ main(int, char* argv[]) {
         shadow_shader_unicol.setFloat("far", FAR_VALUE);
         shadow_shader_unicol.setInt("shadowMap", 8);
 
+        waterShader.use();
+        waterShader.setVec3("light_dir", lightPos);
 
         // Landschaft
         //createWorldTerrain(mapHeight, mapWidth, heightMultiplier, mapScale, shadow_shader_unicol.ID, map_chunks, numChunksVisible);
@@ -446,8 +460,12 @@ main(int, char* argv[]) {
         if (!useOrbital) render_scene(objects, &cam, i_FRAME);
         else render_scene(objects, &orbitalCam, i_FRAME);
 
-        createWorldTerrain(mapHeight, mapWidth, heightMultiplier, mapScale, shadow_shader_unicol.ID, map_chunks, numChunksVisible, !useOrbital ? cam.position : orbitalCam.position());
+        if (i_FRAME < 1400)
+            createWorldTerrain(mapHeight, mapWidth, heightMultiplier, mapScale, shadow_shader_unicol.ID, map_chunks, numChunksVisible, !useOrbital ? cam.position : orbitalCam.position());
 
+
+        glActiveTexture(GL_TEXTURE8);
+        glBindTexture(GL_TEXTURE_2D, shadowDepthMap);
         landschaftShader.use();
         setupModelTransformation(landschaftShader.ID);
         landschaftShader.setMat4("proj_mat", proj_matrix);

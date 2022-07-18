@@ -66,13 +66,13 @@ float rand(vec2 co){
 void main()
 {    
     vec3 color = texture(texture_snow, 10.0f * fs_in.TexCoords).rgb;
-    color = vec3(0.85f + 0.05f * rand(0.1f * fs_in.FragPosLightSpace.xz));
-    color += vec3(0.05f * rand(0.01f * fs_in.FragPosLightSpace.xz));
+    color = vec3(0.85f + 0.03f * rand(0.1f * fs_in.FragPos.xz));
+    color += vec3(0.02f * rand(0.01f * fs_in.FragPos.xz));
     vec3 normal = normalize(fs_in.Normal);
     // ambient
     vec3 ambient = 0.15f * lightColor;
     // diffuse
-    vec3 lightDir = normalize(lightPos);
+    vec3 lightDir = normalize(-lightPos);
     float diff = max(dot(lightDir, normal), 0.0f);
     vec3 diffuse = diff * lightColor;
     // specular
@@ -85,7 +85,7 @@ void main()
     // calculate shadow
     float shadow = ShadowCalculation(fs_in.FragPosLightSpace);                      
     vec3 lighting = (ambient + (1.0f - shadow) * (diffuse + specular)) * color;    
-    
+
     FragColor = vec4(lighting, 1.0f);
     FragColor = mix(FragColor, vec4(fogColor, 1.0f), pow(getFogFactor(distance(viewPos, fs_in.FragPos)), 5));
 } 
