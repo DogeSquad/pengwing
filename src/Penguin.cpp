@@ -66,9 +66,11 @@ void setupAnimation(Animator *positionAnimator, Animator *rotationAnimator, Anim
 	float heigthMax = 70.0f;
 	float heightDifference = heigthMax - heightMin;
 	int stepSize = 5;
-	for (int i = 0; i < duration; i+= stepSize)
+	for (int i = 1; i < duration / stepSize; i++)
 	{
-		positionAnimator->AddKeyframe(frameStart + i, glm::vec4(0.0f, heightMin + heightDifference * glm::pow((1.0f - (2.0f * (i / stepSize / duration) - 1.0f)), 2), 0.0f, 1.0f), Animator::LINEAR);
+		float x = i / duration / stepSize;
+		float height = heightMin + heightDifference * (1.0f - glm::pow(1.0f - 2.0f * x, 2));
+		positionAnimator->AddKeyframe(frameStart + stepSize * i, glm::vec4(0.0f, height, 0.0f, 1.0f), Animator::LINEAR);
 	}
 
 

@@ -1,3 +1,4 @@
+#define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "common.hpp"
 #include "Shader.h"
 #include "Model.h"
@@ -14,6 +15,8 @@
 #include "perlin.h"
 #include "terrain.h"
 
+#include "stb_image_write.h"
+
 #include <map>
 #include <string>
 #include <chrono>
@@ -24,6 +27,8 @@ const int WINDOW_WIDTH       = 1920;
 const int WINDOW_HEIGHT      = 1080;
 constexpr float ASPECT_RATIO = static_cast<float>(WINDOW_WIDTH) / static_cast<float>(WINDOW_HEIGHT);
 
+bool render = false;
+
 // Camera Settings
 const float FOV        = 45.0f;
 const float NEAR_VALUE = 0.1f;
@@ -31,7 +36,7 @@ const float FAR_VALUE  = 300.0f;
 bool useOrbital        = false;
 
 // GUI Settings
-bool enableGUI            = true;
+bool enableGUI            = false;
 const int timeline_height = 200;
 
 // Timeline Settings
@@ -84,6 +89,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 void render_scene(std::vector<Object*> objects, Camera* cam, unsigned int frame);
 void render_scene(std::vector<Object*> objects, camera_orbital* orbitalCam, unsigned int frame);
 void render_scene_with_shader(std::vector<Object*> objects, Shader* shader, unsigned int frame);
+void saveImage(const char* filepath, GLFWwindow* w);
 void renderQuad();
 #ifndef M_PI
 #define M_PI 3.14159265359
@@ -102,6 +108,7 @@ main(int, char* argv[]) {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_SAMPLES, 4);
+
 
     //map generation
     int mapHeight = 128; //Height of each chunk
@@ -298,12 +305,12 @@ main(int, char* argv[]) {
     pp_clouds.setVec3("boundsMin", cloud_boundsMin);
     pp_clouds.setVec3("boundsMax", cloud_boundsMax);
 
-    bool CloudActive = false;
-    float CloudScale = 6.231f;
+    bool CloudActive = true;
+    float CloudScale = 3.231f;
     float CloudOffset[3] = { 0.0f, 0.0f, 0.0f };
     float CloudOffsetSpeed[3] = { 0.017f, 0.007f, 0.001f };
-    float DensityThreshold = 0.864f;
-    float DensityMultiplier = 1.256f;
+    float DensityThreshold = 1.156f;
+    float DensityMultiplier = 1.407f;
     float DarknessThreshold = 3.869f;
     float LightAbsorption = 2.06f;
     float PhaseVal = 0.814f;
@@ -354,13 +361,20 @@ main(int, char* argv[]) {
     lightSpaceMatrix = lightProjection * lightView;
     // ----------------------------------------------------------------
 
+    i_FRAME = 1750;
+
     glfwSetKeyCallback(window, key_callback);
     glfwMaximizeWindow(window);
     std::chrono::time_point<std::chrono::system_clock> start, end;
     // rendering loop
-    std::cout << "Vor der Schleife" << std::endl;
     while (glfwWindowShouldClose(window) == false) {
         start = std::chrono::system_clock::now();
+
+        if (render)
+        {
+            if (i_FRAME >= duration * FPS) break;
+            std::cout << "Rendering Frame " + std::to_string(i_FRAME) << std::endl;
+        }
 
         if (!useOrbital) cam.update(i_FRAME);
         // First pass --> render to shadow-----------------------------
@@ -584,7 +598,16 @@ main(int, char* argv[]) {
         if (enableGUI) imgui_render();
         glfwSwapBuffers(window);
         glfwPollEvents();
-        
+
+        if (render)
+        {
+            std::string num = std::to_string(i_FRAME);
+            std::string numStr = std::to_string(i_FRAME).insert(0, 5 - num.length(), '0');
+            std::string path = DATA_ROOT + std::string("rendered/frame") + numStr + std::string(".png");
+            saveImage(path.c_str(), window);
+        }
+
+
         // FPS limiting
         end = std::chrono::system_clock::now();
         std::chrono::duration<double, std::milli> elapsed_milliseconds = end - start;
@@ -602,6 +625,24 @@ main(int, char* argv[]) {
     cleanup_imgui();
     glfwTerminate();
 }
+
+void saveImage(const char* filepath, GLFWwindow* w) {
+    int width = WINDOW_WIDTH;
+    int height = WINDOW_HEIGHT;
+    //glfwGetFramebufferSize(w, &width, &height);
+    GLsizei nrChannels = 3;
+    GLsizei stride = nrChannels * width;
+    stride += (stride % 4) ? (4 - stride % 4) : 0;
+    GLsizei bufferSize = stride * height;
+    std::vector<char> buffer(bufferSize);
+    glPixelStorei(GL_PACK_ALIGNMENT, 4);
+    glReadBuffer(GL_FRONT);
+    glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, buffer.data());
+    stbi_flip_vertically_on_write(true);
+    stbi_write_png(filepath, width, height, nrChannels, buffer.data(), stride);
+}
+
+
 // Landschaft -------------------------------------
 //erstellt noise map mit perlin noise
 std::vector<float> generateNoiseMap(int offsetX, int offsetY, int chunkHeight, int chunkWidth) {
