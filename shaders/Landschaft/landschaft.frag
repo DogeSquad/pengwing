@@ -7,8 +7,8 @@ out vec4 FragColor;
 in VS_OUT {
     vec3 FragPos;
     vec3 Normal;
-    vec2 TexCoords;
     vec4 FragPosLightSpace;
+    vec3 Color;
 } fs_in;
 
 uniform float near;
@@ -65,12 +65,14 @@ float rand(vec2 co){
 
 void main()
 {    
-    vec3 color = texture(texture_snow, 10.0f * fs_in.TexCoords).rgb;
-    color = vec3(0.85f + 0.03f * rand(0.1f * fs_in.FragPos.xz));
+    vec3 color = fs_in.Color;
+    color = vec3(0.9f + 0.03f * rand(0.1f * fs_in.FragPos.xz));
     color += vec3(0.02f * rand(0.01f * fs_in.FragPos.xz));
+
+
     vec3 normal = normalize(fs_in.Normal);
     // ambient
-    vec3 ambient = 0.15f * lightColor;
+    vec3 ambient = 0.3f * lightColor;
     // diffuse
     vec3 lightDir = normalize(-lightPos);
     float diff = max(dot(lightDir, normal), 0.0f);

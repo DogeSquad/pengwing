@@ -27,7 +27,7 @@ const int WINDOW_WIDTH       = 1920;
 const int WINDOW_HEIGHT      = 1080;
 constexpr float ASPECT_RATIO = static_cast<float>(WINDOW_WIDTH) / static_cast<float>(WINDOW_HEIGHT);
 
-bool render = false;
+bool render = true;
 
 // Camera Settings
 const float FOV        = 45.0f;
@@ -36,12 +36,12 @@ const float FAR_VALUE  = 300.0f;
 bool useOrbital        = false;
 
 // GUI Settings
-bool enableGUI            = false;
+bool enableGUI            = true;
 const int timeline_height = 200;
 
 // Timeline Settings
 const int FPS        = 60;
-const float duration = 30;
+const float duration = 34;
 int i_FRAME          = 0;
 int loop_start       = 0;
 int loop_end         = int(FPS * duration);
@@ -164,7 +164,7 @@ main(int, char* argv[]) {
     objects[0]->active = true;
     objects.push_back(new Object(shadow_shader_unicol, Model("cannon/cannon.obj", false), &scene_mat, "Cannon"));
     objects[1]->scale = 2.0f * glm::vec3(1.0f, 1.0f, 1.0f);
-    objects[1]->position = glm::vec3(23.0f, 4.0f, 2.0f);
+    objects[1]->position = glm::vec3(23.0f, -10.0f, 2.0f);
     objects[1]->rotation = glm::vec4(0.0f, 1.0f, 0.0f, glm::pi<float>() + 0.3f);
     objects[1]->active = true;
 
@@ -218,7 +218,7 @@ main(int, char* argv[]) {
     // ---------------------------------------------------------------
 
     // Shadow mapping ------------------------------------------------
-    const unsigned int SHADOW_WIDTH = 2048, SHADOW_HEIGHT = 2048;   // Default 1024
+    const unsigned int SHADOW_WIDTH = 4096, SHADOW_HEIGHT = 4096;   // Default 1024
     unsigned int shadowDepthMapFBO;
     glGenFramebuffers(1, &shadowDepthMapFBO);
 
@@ -247,8 +247,8 @@ main(int, char* argv[]) {
     debugDepthQuad.use();
     debugDepthQuad.setInt("depthMap", 0);
 
-    float minShadowBias = 0.031f;
-    float maxShadowBias = 0.051f;
+    float minShadowBias = 0.011f;
+    float maxShadowBias = 0.019f;
     // ---------------------------------------------------------------
 
     // Depth map -----------------------------------------------------
@@ -305,7 +305,7 @@ main(int, char* argv[]) {
     pp_clouds.setVec3("boundsMin", cloud_boundsMin);
     pp_clouds.setVec3("boundsMax", cloud_boundsMax);
 
-    bool CloudActive = true;
+    bool CloudActive = false;
     float CloudScale = 3.231f;
     float CloudOffset[3] = { 0.0f, 0.0f, 0.0f };
     float CloudOffsetSpeed[3] = { 0.017f, 0.007f, 0.001f };
@@ -351,29 +351,39 @@ main(int, char* argv[]) {
     float theta = 1.9f;
     float azimuth = 2.3f;
     glm::vec3 lightPos = glm::vec3(glm::sin(azimuth) * glm::cos(theta), glm::sin(azimuth) * glm::sin(theta), glm::cos(theta));
-    lightPos = glm::vec3(-1.0f, 1.0f, -1.0f);
+    lightPos = glm::vec3(-0.3f, 0.2f, -0.7f);
     glm::vec3 lightColor = glm::vec3(0.9f, 0.9f, 0.89f);
     glm::mat4 lightProjection, lightView;
     glm::mat4 lightSpaceMatrix;
-    float near_plane = -10.0f, far_plane = 50.5f;
-    lightProjection = glm::ortho<float>(-50.0f, 50.0f, -50.0f, 50.0f, near_plane, far_plane);
+    float near_plane = -20.0f, far_plane = 80.5f;
+    lightProjection = glm::ortho<float>(-100.0f, 100.0f, -100.0f, 100.0f, near_plane, far_plane);
     lightView = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     lightSpaceMatrix = lightProjection * lightView;
     // ----------------------------------------------------------------
 
-    i_FRAME = 1750;
-
     glfwSetKeyCallback(window, key_callback);
     glfwMaximizeWindow(window);
+
+    if (render)
+    {
+        CloudActive = true;
+        enableGUI = false;
+    }
+
     std::chrono::time_point<std::chrono::system_clock> start, end;
     // rendering loop
     while (glfwWindowShouldClose(window) == false) {
         start = std::chrono::system_clock::now();
 
-        if (render)
+        objects[0]->rotation = glm::vec4(1.0f, 0.0f, 0.0f, 0.001f * glm::sin(0.01f * i_FRAME));
+
+        if (i_FRAME > 780)
         {
-            if (i_FRAME >= duration * FPS) break;
-            std::cout << "Rendering Frame " + std::to_string(i_FRAME) << std::endl;
+            objects[1]->position = glm::vec3(23.0f, 4.0f, 2.0f);
+        }
+        else
+        {
+            objects[1]->position = glm::vec3(23.0f, -10.0f, 2.0f);
         }
 
         if (!useOrbital) cam.update(i_FRAME);
@@ -581,9 +591,9 @@ main(int, char* argv[]) {
             ImGui::End();
         }
 
-        CloudOffset[0] += CloudOffsetSpeed[0];
-        CloudOffset[1] += CloudOffsetSpeed[1];
-        CloudOffset[2] += CloudOffsetSpeed[2];
+        CloudOffset[0] = 0.1f * i_FRAME * CloudOffsetSpeed[0];
+        CloudOffset[1] = 0.1f * i_FRAME * CloudOffsetSpeed[1];
+        CloudOffset[2] = 0.1f * i_FRAME * CloudOffsetSpeed[2];
 
         // Advance Timeline
         if (play)
@@ -594,6 +604,7 @@ main(int, char* argv[]) {
                 i_FRAME = loop_start;
             }
         }
+
 
         if (enableGUI) imgui_render();
         glfwSwapBuffers(window);
@@ -606,7 +617,11 @@ main(int, char* argv[]) {
             std::string path = DATA_ROOT + std::string("rendered/frame") + numStr + std::string(".png");
             saveImage(path.c_str(), window);
         }
-
+        if (render)
+        {
+            if (i_FRAME >= duration * FPS) exit(0);
+            std::cout << "Rendering Frame " + std::to_string(i_FRAME) << std::endl;
+        }
 
         // FPS limiting
         end = std::chrono::system_clock::now();
@@ -773,11 +788,11 @@ void createPlane(std::vector<int>& position, int xOffset, int yOffset, int heigh
 
     //Creating different terrain types
     //Height is the upper threshold
-    terrainType snowTerrain1 = terrainType("snow1", heightMultiplier * 1.0f, 0.9, 0.95, 0.92); //white
-    terrainType snowTerrain2 = terrainType("snow2", heightMultiplier * 0.7f, 0.9, 0.91, 0.92); //white a bit different
-    terrainType snowTerrain3 = terrainType("snow3", heightMultiplier * 0.12f, 0.9, 0.93, 0.93); //white a bit more different
-    terrainType snowTerrain4 = terrainType("snow4", heightMultiplier * 0.08f, 0.9, 0.95, 0.99); //white even a bit more different
-    terrainType waterTerrain = terrainType("water", heightMultiplier * 0.04f, 0.0, 0.50, 0.81); //Blue
+    terrainType snowTerrain1 = terrainType("snow1", heightMultiplier * 1.0f, 0.9f, 0.9f, 0.92f); //white
+    terrainType snowTerrain2 = terrainType("snow2", heightMultiplier * 0.7f, 0.9f, 0.9f, 0.92f); //white a bit different
+    terrainType snowTerrain3 = terrainType("snow3", heightMultiplier * 0.12f, 0.9f, 0.9f, 0.9f); //white a bit more different
+    terrainType snowTerrain4 = terrainType("snow4", heightMultiplier * 0.08f, 0.9f, 0.9f, 0.9f); //white even a bit more different
+    terrainType waterTerrain = terrainType("water", heightMultiplier * 0.04f, 0.0f, 0.50f, 0.81); //Blue
 
     int terrainCount = 5;
     std::vector<terrainType> terrainArr;

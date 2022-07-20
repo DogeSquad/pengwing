@@ -34,11 +34,11 @@ void setupAnimationPenguinNode(Animator* positionAnimator, Animator* rotationAni
 
 	rotationAnimator->AddKeyframe(750, glm::vec4(0.0f, 1.0f, 0.0f, glm::three_over_two_pi<float>() - 1.0f), Animator::HOLD);
 
-	positionAnimator->AddKeyframe(1400, glm::vec4(-250.0f, 0.0f, 0.0f, 1.0f), Animator::HOLD);
-	positionAnimator->AddKeyframe(1650, glm::vec4(-350.0f, 0.0f, 0.0f, 1.0f), Animator::EASE_OUT);
+	positionAnimator->AddKeyframe(1500, glm::vec4(-250.0f, 0.0f, -20.0f, 1.0f), Animator::HOLD);
+	positionAnimator->AddKeyframe(1750, glm::vec4(-400.0f, 0.0f, -20.0f, 1.0f), Animator::LINEAR);
 
 
-	positionAnimator->AddKeyframe(1800, glm::vec4(20.0f, 1.2f, -1.0f, 1.0f), Animator::HOLD);
-	rotationAnimator->AddKeyframe(1800, glm::vec4(0.0f, 1.0f, 0.0f, 0.0f), Animator::HOLD);
-	scaleAnimator->AddKeyframe(1800, glm::vec4(glm::vec3(0.8f), 1.0f), Animator::HOLD);
+	positionAnimator->AddKeyframe(2040, glm::vec4(20.0f, 1.2f, -1.0f, 1.0f), Animator::HOLD);
+	rotationAnimator->AddKeyframe(2040, glm::vec4(0.0f, 1.0f, 0.0f, 0.0f), Animator::HOLD);
+	scaleAnimator->AddKeyframe(2040, glm::vec4(glm::vec3(0.8f), 1.0f), Animator::HOLD);
 }

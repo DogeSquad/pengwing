@@ -40,7 +40,7 @@ void setupAnimationPenguinWings(Animator* positionAnimator, Animator* rotationAn
 
 
 
-	positionAnimator->AddKeyframe(1800, glm::vec4(0.0f, 1.0f, 0.0f, 1.0f), Animator::HOLD);
-	rotationAnimator->AddKeyframe(1800, glm::vec4(0.0f, 1.0f, 0.0f, 0.0f), Animator::HOLD);
-	scaleAnimator->AddKeyframe(1800, glm::vec4(1.0f), Animator::HOLD);
+	positionAnimator->AddKeyframe(2040, glm::vec4(0.0f, 1.0f, 0.0f, 1.0f), Animator::HOLD);
+	rotationAnimator->AddKeyframe(2040, glm::vec4(0.0f, 1.0f, 0.0f, 0.0f), Animator::HOLD);
+	scaleAnimator->AddKeyframe(2040, glm::vec4(1.0f), Animator::HOLD);
 }

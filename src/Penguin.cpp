@@ -46,7 +46,7 @@ void setupAnimation(Animator *positionAnimator, Animator *rotationAnimator, Anim
 	rotationAnimator->AddKeyframe(650, glm::vec4(1.0f, 0.0f, 0.0f, 0.0f), Animator::HOLD);
 	
 	positionAnimator->AddKeyframe(690, glm::vec4(0.0f, 0.0f, 0.0f, 1.0f), Animator::EASE_IN);
-	rotationAnimator->AddKeyframe(690, glm::vec4(0.0f, 0.01f, 1.001f, glm::half_pi<float>()), Animator::LINEAR);
+	rotationAnimator->AddKeyframe(690, glm::vec4(0.3f, 0.1f, 1.01f, glm::half_pi<float>()), Animator::LINEAR);
 
 	positionAnimator->AddKeyframe(750, glm::vec4(0.0f, -5.0f, 0.0f, 1.0f), Animator::HOLD);
 
@@ -59,25 +59,31 @@ void setupAnimation(Animator *positionAnimator, Animator *rotationAnimator, Anim
 
 	positionAnimator->AddKeyframe(1400, glm::vec4(0.0f, 0.0f, 0.0f, 1.0f), Animator::HOLD);
 
-	int frameStart = 1520;
-	int frameEnd = 1700;
+	int frameStart = 1500;
+	int frameEnd = 1750;
 	int duration = frameEnd - frameStart;
-	float heightMin = 30.0f;
-	float heigthMax = 70.0f;
+	float heightMin = 55.0f;
+	float heigthMax = 100.0f;
 	float heightDifference = heigthMax - heightMin;
-	int stepSize = 5;
-	for (int i = 1; i < duration / stepSize; i++)
+	int stepSize = 10;
+
+	positionAnimator->AddKeyframe(frameStart, glm::vec4(0.0f, heightMin, 0.0f, 1.0f), Animator::HOLD);
+	rotationAnimator->AddKeyframe(frameStart, glm::vec4(0.0f, -0.2f, 1.0f, -glm::half_pi<float>()), Animator::HOLD);
+	for (int i = stepSize; i < duration; i+= stepSize)
 	{
-		float x = i / duration / stepSize;
+		float x = float(i) / float(duration);
 		float height = heightMin + heightDifference * (1.0f - glm::pow(1.0f - 2.0f * x, 2));
-		positionAnimator->AddKeyframe(frameStart + stepSize * i, glm::vec4(0.0f, height, 0.0f, 1.0f), Animator::LINEAR);
+		
+		positionAnimator->AddKeyframe(frameStart + i, glm::vec4(0.0f, height, 0.0f, 1.0f), Animator::LINEAR);
+		std::cout << i << " (" << x << "): " << height << std::endl;
 	}
+	rotationAnimator->AddKeyframe(frameEnd, glm::vec4(0.0f, 0.02f, 1.0f, glm::half_pi<float>()), Animator::LINEAR);
+	//positionAnimator->AddKeyframe(1520, glm::vec4(0.0f, heigthMax, 0.0f, 1.0f), Animator::LINEAR);
 
 
-
-	positionAnimator->AddKeyframe(1800, glm::vec4(0.0f, 0.2f, 0.0f, 1.0f), Animator::HOLD);
-	rotationAnimator->AddKeyframe(1800, glm::vec4(0.0f, 1.0f, 0.0f, 0.0f), Animator::HOLD);
-	scaleAnimator->AddKeyframe(1800, glm::vec4(glm::vec3(0.8f), 1.0f), Animator::HOLD);
+	positionAnimator->AddKeyframe(2040, glm::vec4(0.0f, 0.2f, 0.0f, 1.0f), Animator::HOLD);
+	rotationAnimator->AddKeyframe(2040, glm::vec4(0.0f, 1.0f, 0.0f, 0.0f), Animator::HOLD);
+	scaleAnimator->AddKeyframe(2040, glm::vec4(glm::vec3(0.8f), 1.0f), Animator::HOLD);
 }
 
 void waddle(unsigned int frameStart, unsigned int frameEnd, float height, glm::vec4 initPos, Animator *positionAnimator, Animator *rotationAnimator)
